@@ -1,0 +1,52 @@
+# Development stack for mister-quiz.
+# Ports and database credentials are read from .env (see .env.example).
+name: mister-quiz
+
+services:
+  app:
+    build:
+      context: .
+    image: mister-quiz-app:dev
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - .:/var/www/html
+    environment:
+      # Always reach the db service, even if an older .env still says DB_HOST=127.0.0.1.
+      DB_HOST: db
+      DB_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4.11
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-mister_quiz}
+      MYSQL_USER: ${DB_USERNAME:-mister_quiz}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    # No published port: MySQL is reached only inside the Docker network,
+    # so it never clashes with a MySQL server already running on the PC.
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  phpmyadmin:
+    image: phpmyadmin:5.2.3
+    environment:
+      PMA_HOST: db
+    ports:
+      - "${PHPMYADMIN_PORT:-8080}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:

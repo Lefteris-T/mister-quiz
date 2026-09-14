@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Runs PHP 8.0.30 from the mister-quiz Docker image, as if it were installed on this machine.
+# Linux only. Install: see "Host php/composer wrappers" in _docs/Installation-guide.md.
+set -euo pipefail
+
+image="mister-quiz-app:dev"
+
+if ! docker image inspect "$image" >/dev/null 2>&1; then
+    echo "php wrapper: image '$image' not found. Run 'docker compose build app' in the mister-quiz folder first." >&2
+    exit 1
+fi
+
+# Mount the git project root (or the current folder) at the same path, so paths in errors match this machine.
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+if [ "$root" = "/" ]; then
+    echo "php wrapper: run it from a project folder, not from /." >&2
+    exit 1
+fi
+
+# Composer downloads are cached on this machine instead of inside the throwaway container.
+cache="$HOME/.cache/composer"
+mkdir -p "$cache"
+
+tty_flags=()
+if [ -t 0 ] && [ -t 1 ]; then
+    tty_flags=(--interactive --tty)
+fi
+
+# Join the project's Docker network when the stack is running, so DB_HOST=db reaches MySQL.
+network_flags=()
+if docker network inspect mister-quiz_default >/dev/null 2>&1; then
+    network_flags=(--network mister-quiz_default)
+fi
+
+exec docker run --rm "${tty_flags[@]}" "${network_flags[@]}" \
+    --user "$(id -u):$(id -g)" \
+    --env HOME=/tmp \
+    --env COMPOSER_HOME=/tmp/composer \
+    --volume "$cache:/tmp/composer/cache" \
+    --volume "$root:$root" \
+    --workdir "$PWD" \
+    --entrypoint php \
+    "$image" "$@"

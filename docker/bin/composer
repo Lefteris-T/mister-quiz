@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Runs Composer 2.9.5 with PHP 8.0.30 from the mister-quiz Docker image (through the php wrapper).
+# Linux only. Install: see "Host php/composer wrappers" in _docs/Installation-guide.md.
+set -euo pipefail
+
+exec "$(dirname "$(readlink -f "$0")")/php" /usr/bin/composer "$@"

@@ -1,0 +1,4 @@
+# Shell scripts must keep LF line endings, even when cloned with Git for Windows;
+# a CRLF entrypoint stops the container ("exec /usr/local/bin/entrypoint: no such file or directory").
+*.sh text eol=lf
+docker/bin/* text eol=lf
