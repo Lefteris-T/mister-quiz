@@ -128,6 +128,8 @@ The work splits into two areas. Each Gitea issue has the label of its area.
 
 Both members build the **database schema together** first (issue #3). Nobody changes it alone later.
 
+Inside a milestone, we **split by module**, not by issue, so we never edit the same files in the same week. Every issue title starts with its module, like `[auth]`. How we choose and claim work: [`MILESTONES.md`](_docs/MILESTONES.md#how-we-pick-and-work-issues).
+
 ## Installation
 
 > 📖 The full, step-by-step guide is [`_docs/Installation-guide.md`](_docs/Installation-guide.md) (in Greek). **Follow it exactly.** Use only the versions below.
@@ -287,6 +289,8 @@ Every milestone matches a part of the audit checklist. A milestone is **done** w
 
 Issues **#5–#14** are bugs we found in the starter code. Each one links to the exact lines.
 
+Every issue by milestone and by module: [`_docs/MILESTONES.md`](_docs/MILESTONES.md).
+
 ## Gitea Workflow
 
 - **Repository**: https://platform.zone01.gr/git/hmim/mister-quiz (private).
@@ -294,18 +298,20 @@ Issues **#5–#14** are bugs we found in the starter code. Each one links to the
 
   | Branch | Purpose | Rules |
   |---|---|---|
-  | `main` | Stable, audited code | Protected: no direct push, PR with 1 approval |
+  | `main` | Stable, audited code | Protected. Only `hmim` pushes, and only docs. Everything else by PR with 1 approval |
   | `dev` | Integration of finished issues | Target of every feature PR |
-  | `feature/m<N>-<short-name>` | One issue | Created from `dev`, example `feature/m1-login` |
-  | `fix/<issue>-<short-name>` | One bug | Created from `dev`, example `fix/7-unique-email` |
+  | `feat/<module>` | One module | Created from `dev`, example `feat/auth` |
 
-- **Flow for one issue**:
-  1. Assign the issue to yourself.
+  The modules are `env`, `db`, `auth`, `home`, `quiz`, `results`, `profile`, `leaderboard`, `test`, `docs`. Every issue title starts with one.
+
+- **Flow for one module**:
+  1. Assign the issue to yourself **before** you start.
   2. `git switch dev && git pull`
-  3. `git switch -c feature/m1-login`
+  3. `git switch -c feat/auth`
   4. Commit small steps. Push the branch.
-  5. Open a PR into `dev`. Write `Closes #16` in the description.
+  5. Open a PR into `dev`. Write `Closes #6, #16` in the description. One PR can close several issues.
   6. The other member reviews. Merge after approval.
+- **Blocked issues** show what they wait for in Gitea. An issue with no blocker is ready to start. The list is in [`MILESTONES.md`](_docs/MILESTONES.md#4-blocked-issues-announce-themselves).
 - **End of a milestone**: PR `dev` → `main` with 1 approval (issue #39).
 - **Commit messages**: [Conventional Commits](https://www.conventionalcommits.org/).
 
@@ -342,6 +348,8 @@ mister-quiz
 │   ├── lang/en/                  # validation and auth messages
 │   └── views/                    # Blade pages and components
 ├── routes/web.php                # web routes
+├── scripts/
+│   └── gitea-setup.sh            # labels, milestones and issues (idempotent)
 ├── tests/                        # Feature and Unit tests
 ├── _docs/                        # subject, audit, guides, PRD, test cases
 ├── .env.example                  # shared settings (DB_HOST=db)
@@ -353,6 +361,7 @@ mister-quiz
 ## Project Documentation References
 
 - [PRD](_docs/PRD.md)
+- [Milestones and Issues](_docs/MILESTONES.md)
 - [Audit Cases](_docs/audit-cases.md)
 - [Error Cases](_docs/error-cases.md)
 - [Edge Cases](_docs/edge-cases.md)

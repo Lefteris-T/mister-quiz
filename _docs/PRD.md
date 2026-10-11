@@ -239,7 +239,7 @@ Each milestone is a Gitea milestone. Work happens on `dev` through feature branc
 | Tests wipe the development database | Medium | SQLite in memory for PHPUnit (issue #14); `RefreshDatabase` only there. |
 | Ambiguous rank limits lead to a wrong rank in the audit | Medium | Half-open ranges agreed in #32 and covered by a unit test (EC01); README states the limits. |
 | Question data imported twice | Low | Idempotent seeder (#4); count check in C02 / E04. |
-| Merge conflicts in shared views (`home`, `app` layout) | Medium | Small PRs per issue; frontend/backend labels define ownership; pull `dev` before starting. |
+| Merge conflicts in shared views (`home`, `app` layout) | Medium | One peer per module (see [MILESTONES.md](MILESTONES.md#3-split-by-module-not-by-issue)); small PRs; pull `dev` before starting. |
 
 ### 9.2 Open Questions
 
