@@ -68,7 +68,7 @@
 | PHP extensions | `pdo_mysql`, `zip` + ενσωματωμένα (`mbstring`, `xml`, `dom`, `curl`, `tokenizer`, `json`, `openssl`, `ctype`, `fileinfo`, `pdo_sqlite`) | Docker image | `php -m` | Περιέχει όλα τα ονόματα |
 | Composer | **2.9.5** | Docker image `composer:2.9.5` | `composer --version` | `Composer version 2.9.5 2026-01-29 11:40:53` |
 | Laravel Framework | **8.33.0** | Κλειδωμένο στο `composer.lock` | `php artisan --version` | `Laravel Framework 8.33.0` |
-| MySQL | **8.4.11** | Docker image `mysql:8.4.11` | `docker compose exec db mysql --version` | `mysql  Ver 8.4.11 for Linux on x86_64 (MySQL Community Server - GPL)` |
+| MySQL | **8.4.11** | Docker image `mysql:8.4.11` | `docker compose exec db mysql --version` | `mysql  Ver 8.4.11 for Linux on x86_64 (MySQL Community Server - GPL)` (`aarch64` αντί για `x86_64` σε επεξεργαστή ARM, π.χ. Mac M1) |
 | phpMyAdmin | **5.2.3** | Docker image `phpmyadmin:5.2.3` | Άνοιξε `http://localhost:8080` | Σελίδα σύνδεσης phpMyAdmin |
 | tea (Gitea CLI) | **0.15.1** | Linux / WSL · μόνο όποιος διαχειρίζεται το Gitea | `tea --version` | `Version: 0.15.1 …` |
 | VS Code | Τελευταία έκδοση | Windows: + extension **WSL** | — | — |
@@ -326,6 +326,8 @@ PHP 8.0.30 (cli) (built: Nov 21 2023 16:10:15) ( NTS )
 Composer version 2.9.5 2026-01-29 11:40:53
 ```
 
+Στο macOS ο φάκελος είναι `/Users/<το-username-σου>/…` αντί για `/home/…`.
+
 Αν το `type php` δείχνει κάτι άλλο (π.χ. `/usr/bin/php`), δες [«Το php -v δείχνει άλλη έκδοση»](#-το-php--v-δείχνει-άλλη-έκδοση).
 
 ---
@@ -414,7 +416,8 @@ docker compose exec -T db mysql -umister_quiz -psecret -e "select category, coun
 Τρέξε **όλες** τις εντολές μέσα στον φάκελο του project και στείλε την έξοδο στην ομάδα.
 
 ```bash
-lsb_release -ds
+uname -srm
+[ -r /etc/os-release ] && (. /etc/os-release; echo "$PRETTY_NAME")
 docker --version
 docker compose version
 git --version
@@ -428,17 +431,20 @@ php artisan migrate:status
 php artisan test
 ```
 
+> ℹ️ Οι εντολές τρέχουν σε κάθε σύστημα με terminal τύπου Unix: Linux (οποιαδήποτε διανομή), WSL2 στα Windows και macOS. Στα Windows τρέχουν στο terminal **Ubuntu 26.04**, όχι στο PowerShell.
+
 | Εντολή | Αναμενόμενο αποτέλεσμα |
 |---|---|
-| `lsb_release -ds` | `Ubuntu 26.04 LTS` |
+| `uname -srm` | Windows: πρέπει να περιέχει `WSL2`, π.χ. `Linux 6.6.x-microsoft-standard-WSL2 x86_64`. Linux: π.χ. `Linux 7.0.0-38-generic x86_64` (ο αριθμός του kernel διαφέρει). Άλλο σύστημα, π.χ. Mac: `Darwin 25.x arm64`: στείλ' το στην ομάδα, οι υπόλοιπες γραμμές πρέπει να δώσουν τα ίδια αποτελέσματα |
+| `[ -r /etc/os-release ] && …` | Linux και WSL2: `Ubuntu 26.04 LTS`. Στο macOS δεν τυπώνει τίποτα, είναι φυσιολογικό |
 | `docker --version` | Αρχίζει με `Docker version 29.6.1` |
 | `docker compose version` | `Docker Compose version v5.2.0` |
 | `git --version` | `git version 2.53.0` |
-| `type php` | `php is /home/<username>/.local/bin/php` |
+| `type php` | `php is <το-home-σου>/.local/bin/php`. Linux: `/home/<username>/…`, macOS: `/Users/<username>/…` |
 | `php -v` | `PHP 8.0.30 (cli) …` |
 | `composer --version` | `Composer version 2.9.5 …` |
 | `php artisan --version` | `Laravel Framework 8.33.0` |
-| `docker compose exec db mysql --version` | `mysql  Ver 8.4.11 …` |
+| `docker compose exec db mysql --version` | `mysql  Ver 8.4.11 …` (στο τέλος `x86_64` ή `aarch64`, ανάλογα με τον επεξεργαστή) |
 | `docker compose ps` | `db` `(healthy)`, `app` `Up`, `phpmyadmin` `Up` |
 | `php artisan migrate:status` | 7 migrations με `Yes` |
 | `php artisan test` | `Tests: 1 failed, 1 passed` — το failed είναι το test της αρχικής σελίδας `/` (Milestone 2) |
