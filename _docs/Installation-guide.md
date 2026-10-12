@@ -379,21 +379,20 @@ php artisan migrate:status
 
 ---
 
-### Βήμα 8: Εισαγωγή ερωτήσεων (μία φορά μόνο)
+### Βήμα 8: Φόρτωση ερωτήσεων
 
 ```bash
-curl -fsSL -o /tmp/questions_and_answers.sql https://assets.01-edu.org/mister-quiz/questions_and_answers.sql
-docker compose exec -T db mysql -umister_quiz -psecret mister_quiz < /tmp/questions_and_answers.sql
+php artisan db:seed
 ```
+
+Ο seeder φορτώνει τις 60 ερωτήσεις και τις 240 απαντήσεις. Μπορείς να τρέξεις την εντολή ξανά χωρίς να δημιουργηθούν διπλές εγγραφές.
 
 Έλεγχος:
 ```bash
-docker compose exec -T db mysql -umister_quiz -psecret -e "select category, count(*) from question group by category" mister_quiz
+docker compose exec db mysql -umister_quiz -psecret -e "select category, count(*) from question group by category" mister_quiz
 ```
 
 Πρέπει να δεις **5** κατηγορίες (`Art`, `Geography`, `History`, `Science`, `Sports`) με **12** ερωτήσεις η καθεμία.
-
-> ⚠️ Αν το τρέξεις 2 φορές, οι ερωτήσεις διπλασιάζονται. Λύση: [«Διπλές ερωτήσεις»](#-διπλές-ερωτήσεις).
 
 ---
 
