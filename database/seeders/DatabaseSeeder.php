@@ -11,8 +11,8 @@ class DatabaseSeeder extends Seeder
      *
      * @return void
      */
- public function run()
-{
-    $this->call(QuestionSeeder::class);
-}
+    public function run()
+    {
+        $this->call(QuestionSeeder::class);
+    }
 }
