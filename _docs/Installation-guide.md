@@ -382,10 +382,17 @@ php artisan migrate:status
 ### Βήμα 8: Φόρτωση ερωτήσεων
 
 ```bash
+# Με τα project wrappers:
 php artisan db:seed
+
+# Χωρίς wrappers, απευθείας μέσα στο app container:
+docker compose exec app php artisan db:seed
 ```
 
 Ο seeder φορτώνει τις 60 ερωτήσεις και τις 240 απαντήσεις. Μπορείς να τρέξεις την εντολή ξανά χωρίς να δημιουργηθούν διπλές εγγραφές.
+Τρέξε μία από τις δύο εντολές, όχι και τις δύο.
+
+Πηγή των ερωτήσεων και απαντήσεων: [01-edu questions and answers SQL](https://assets.01-edu.org/mister-quiz/questions_and_answers.sql). Το dataset περιλαμβάνεται στο project· δεν χρειάζεται να εισαγάγεις το SQL αρχείο χειροκίνητα.
 
 Έλεγχος:
 ```bash
