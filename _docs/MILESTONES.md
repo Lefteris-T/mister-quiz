@@ -44,9 +44,9 @@ Same Docker environment for both teammates (PHP 8.0.30, Laravel 8.33.0, MySQL 8.
 | # | Issue | Module | Labels |
 |---|---|---|---|
 | [1](https://platform.zone01.gr/git/hmim/mister-quiz/issues/1) | Docker dev environment (PHP 8.0.30, Laravel 8.33.0, MySQL 8.4.11) ✅ | `env` | — |
-| [2](https://platform.zone01.gr/git/hmim/mister-quiz/issues/2) | Set up the environment on both PCs and post the checklist | `env` | — |
-| [3](https://platform.zone01.gr/git/hmim/mister-quiz/issues/3) | Review the shared database schema before feature work | `db` | backend |
-| [4](https://platform.zone01.gr/git/hmim/mister-quiz/issues/4) | Question data: seeder for the 01-edu questions | `db` | backend |
+| [2](https://platform.zone01.gr/git/hmim/mister-quiz/issues/2) ✅ | Set up the environment on both PCs and post the checklist | `env` | — |
+| [3](https://platform.zone01.gr/git/hmim/mister-quiz/issues/3) ✅ | Review the shared database schema before feature work | `db` | backend |
+| [4](https://platform.zone01.gr/git/hmim/mister-quiz/issues/4) | Question data: seeder for the 01-edu questions ✅ implementation/docs; PR review pending | `db` | backend |
 
 Issues **#3** and **#4** are the base for everything else. #3 blocks **#10**, **#30** and **#35** in Gitea: agree on the schema before anybody writes a migration.
 

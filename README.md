@@ -171,7 +171,7 @@ php artisan key:generate
 docker compose up -d
 ```
 
-Then import the questions **once** (step 8 of the guide) and post the verification checklist in issue **#2**.
+Then run `php artisan db:seed` (step 8 of the guide) and post the verification checklist in issue **#2**. The seeder can be rerun without creating duplicates.
 
 ### Audit / fresh clone (Linux + Docker)
 
@@ -182,9 +182,8 @@ git clone https://platform.zone01.gr/git/hmim/mister-quiz.git
 cd mister-quiz
 docker compose up -d --build
 
-# load the 01-edu questions (run once)
-curl -fsSL -o /tmp/questions_and_answers.sql https://assets.01-edu.org/mister-quiz/questions_and_answers.sql
-docker compose exec -T db mysql -umister_quiz -psecret mister_quiz < /tmp/questions_and_answers.sql
+# load the 01-edu questions (safe to rerun)
+php artisan db:seed
 ```
 
 The first start takes a few minutes. Check the progress with `docker compose logs -f app`.
