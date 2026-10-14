@@ -14,7 +14,14 @@
 <a class="top-right-corner blue-btn" href="{{ route('leaderboard') }}">Leaderboard</a>
 
 @auth
-<a class="bottom-right-corner red-btn" href="{{ route('logout') }}">Logout</a>
+<form action="{{ route('logout') }}" method="POST">
+    @csrf
+    <button
+        type="submit"
+        class="bottom-right-corner red-btn"
+        style="cursor: pointer;"
+    >Logout</button>
+</form>
 @endauth
 
 <div class="main-img">
