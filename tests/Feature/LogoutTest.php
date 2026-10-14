@@ -37,4 +37,15 @@ class LogoutTest extends TestCase
         $response->assertRedirect('/');
         $this->assertGuest();
     }
+
+    public function test_post_logout_clears_the_session_and_changes_the_csrf_token()
+    {
+        $this->withSession(['quiz_in_progress' => 'some-data']);
+        $tokenBefore = session()->token();
+
+        $this->post('/logout');
+
+        $this->assertNotSame($tokenBefore, session()->token());
+        $this->assertNull(session('quiz_in_progress'));
+    }
 }
