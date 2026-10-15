@@ -17,25 +17,22 @@ class RegisterController extends Controller
 
     public function store(Request $request)
     {
-        //validate
-        $this->validate($request, [
-            'username' => 'required|max:255',
-            'email' => 'required|email|max:255|unique:users,email',
-            'password' => 'required|confirmed'
+        $validated = $request->validate([
+            'username' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'confirmed'],
+            'password_confirmation' => ['required', 'string'],
         ]);
 
-        //store user
-        User::create([
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password)
+        $user = User::create([
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
         ]);
 
-        //sign user in
-        $credentials = $request->only('email', 'password');
-        Auth::attempt($credentials);
+        Auth::login($user);
+        $request->session()->regenerate();
 
-        //redirect
         return redirect()->route('home');
     }
 }
