@@ -64,4 +64,90 @@ class RegisterTest extends TestCase
         $this->assertSame('firstuser', $user->fresh()->username);
         $this->assertGuest();
     }
+
+        public function test_registration_creates_and_signs_in_a_user()
+    {
+        $response = $this->post('/register', [
+            'username' => 'newuser',
+            'email' => 'new@example.com',
+            'password' => 'correct-password',
+            'password_confirmation' => 'correct-password',
+        ]);
+
+        $response->assertRedirect('/');
+        $response->assertSessionHasNoErrors();
+
+        $this->assertSame(1, User::count());
+
+        $user = User::where('email', 'new@example.com')->firstOrFail();
+
+        $this->assertSame('newuser', $user->username);
+        $this->assertTrue(
+            \Illuminate\Support\Facades\Hash::check(
+                'correct-password',
+                $user->password
+            )
+        );
+
+        $this->assertSame(0, (int) $user->xp);
+
+        foreach (['art', 'history', 'geography', 'science', 'sports'] as $category) {
+            $this->assertSame('0/0', $user->{$category}, $category);
+        }
+
+        $this->assertAuthenticatedAs($user);
+    }
+        public function test_invalid_registration_is_rejected()
+    {
+        $valid = [
+            'username' => 'newuser',
+            'email' => 'new@example.com',
+            'password' => 'correct-password',
+            'password_confirmation' => 'correct-password',
+        ];
+
+        $cases = [
+            'missing username' => ['username', ''],
+            'missing email' => ['email', ''],
+            'invalid email' => ['email', 'not-an-email'],
+            'missing password' => ['password', ''],
+            'missing confirmation' => ['password_confirmation', ''],
+            'mismatched confirmation' => ['password_confirmation', 'different'],
+            'overlong username' => ['username', str_repeat('a', 256)],
+        ];
+
+        foreach ($cases as $label => [$field, $value]) {
+            $data = array_replace($valid, [$field => $value]);
+
+            // The confirmed rule reports confirmation errors on password.
+            $errorField = $field === 'password_confirmation'
+                ? 'password'
+                : $field;
+
+            $response = $this->from('/register')->post('/register', $data);
+
+            $response->assertRedirect('/register');
+            $response->assertSessionHasErrors([$errorField]);
+
+            if ($data['username'] !== '') {
+                $response->assertSessionHas(
+                    '_old_input.username',
+                    $data['username']
+                );
+            }
+
+            if ($data['email'] !== '') {
+                $response->assertSessionHas(
+                    '_old_input.email',
+                    $data['email']
+                );
+            }
+
+            $response->assertSessionMissing('_old_input.password');
+            $response->assertSessionMissing('_old_input.password_confirmation');
+
+            $this->assertSame(0, User::count(), $label);
+            $this->assertGuest();
+        }
+    }
 }
