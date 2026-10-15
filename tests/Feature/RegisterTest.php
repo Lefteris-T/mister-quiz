@@ -65,7 +65,7 @@ class RegisterTest extends TestCase
         $this->assertGuest();
     }
 
-        public function test_registration_creates_and_signs_in_a_user()
+    public function test_registration_creates_and_signs_in_a_user()
     {
         $response = $this->post('/register', [
             'username' => 'newuser',
@@ -97,7 +97,8 @@ class RegisterTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
     }
-        public function test_invalid_registration_is_rejected()
+
+    public function test_invalid_registration_is_rejected()
     {
         $valid = [
             'username' => 'newuser',
