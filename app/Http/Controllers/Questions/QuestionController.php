@@ -14,18 +14,8 @@ class QuestionController extends Controller
     public function index(Request $request)
     {
         if ($request->user()) {
-            $categories = ['History', 'Art', 'Geography', 'Science', 'Sports'];
-            $questions = [];
-
             //getting 4 random questions from each category
-            foreach ($categories as $cat) {
-                $query_questions = Question::inRandomOrder()->where('category', $cat)->limit(4)->get();
-                foreach ($query_questions as $qq) {
-                    array_push($questions, $qq);
-                }
-            }
-
-            shuffle($questions);
+            $questions = Question::pickForQuiz();
         } else {
         }
 
