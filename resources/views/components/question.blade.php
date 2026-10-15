@@ -5,7 +5,12 @@
 
     <div class="checkboxes-wrapper" class="center">
         @foreach ($question->answers as $answer)
-
+        <div class="checkbox">
+            <label>
+                <input type="radio" name="answers[{{ $question->id }}]" value="{{ $answer->id }}">
+                <span>{{ $answer->answer }}</span>
+            </label>
+        </div>
         @endforeach
     </div>
 
