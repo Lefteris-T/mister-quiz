@@ -13,13 +13,14 @@ class QuestionController extends Controller
 {
     public function index(Request $request)
     {
-        if ($request->user()) {
-            //getting 4 random questions from each category
-            $questions = Question::pickForQuiz();
-        } else {
+        //the open quiz of the user, or a new one (4 random questions from each category)
+        $quiz = Quiz::startFor($request->user());
+
+        if ($quiz) {
+            $quiz->load('questions.answers');
         }
 
-        return view('questions.list');
+        return view('questions.list', ['quiz' => $quiz]);
     }
 
 
