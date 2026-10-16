@@ -20,25 +20,29 @@ class HomeTest extends TestCase
         return $user;
     }
 
-    public function test_home_shows_the_guest_buttons_to_a_guest()
+    public function test_home_shows_the_three_guest_buttons_and_hides_profile_and_logout()
     {
         $response = $this->get('/');
 
         $response->assertStatus(200);
-        $response->assertSee('Login');
-        $response->assertSee('Leaderboard');
-        $response->assertSee('Start Quiz');
+        $response->assertSee('href="' . route('login') . '">Login</a>', false);
+        $response->assertSee('href="' . route('leaderboard') . '">Leaderboard</a>', false);
+        $response->assertSee('href="' . route('quiz') . '">Start Quiz</a>', false);
+        $response->assertDontSee('Profile');
         $response->assertDontSee('Logout');
     }
 
-    public function test_home_shows_the_username_and_logout_to_a_signed_in_user()
+    public function test_home_shows_the_four_buttons_to_a_signed_in_user_and_hides_login()
     {
         $response = $this->actingAs($this->signedInUser())->get('/');
 
         $response->assertStatus(200);
-        $response->assertSee('testuser');
-        $response->assertSee('Logout');
+        $response->assertSee('href="' . route('profile') . '">Profile</a>', false);
+        $response->assertSee('href="' . route('leaderboard') . '">Leaderboard</a>', false);
+        $response->assertSee('href="' . route('quiz') . '">Start Quiz</a>', false);
+        $response->assertSee('>Logout</button>', false);
         $response->assertDontSee('>Login<', false);
+        $response->assertDontSee('testuser');
     }
 
     public function test_the_profile_leaderboard_and_quiz_routes_have_their_names()

@@ -3,7 +3,7 @@
 @section('content')
 
 @auth
-<a class="top-left-corner blue-btn" href="{{ route('profile') }}">{{ auth()->user()->username }}</a>
+<a class="top-left-corner blue-btn" href="{{ route('profile') }}">Profile</a>
 @endauth
 
 @guest
