@@ -19,6 +19,9 @@ class UserFactoryTest extends TestCase
 
         DB::purge('sqlite');
 
+        $this->assertSame('sqlite', DB::connection()->getDriverName());
+        $this->assertSame(':memory:', DB::connection()->getDatabaseName());
+
         $this->artisan('migrate', ['--force' => true])
             ->assertExitCode(0);
     }
