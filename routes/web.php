@@ -36,4 +36,4 @@ Route::get('/profile', [ProfileController::class, 'index'])->name('profile')->mi
 
 Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard');
 
-Route::get('/quiz', [QuestionController::class, 'index'])->name('quiz');
+Route::get('/quiz', [QuestionController::class, 'index'])->name('quiz')->middleware('auth');
