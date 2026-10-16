@@ -6,8 +6,14 @@
 <form action="{{ route('quiz.submit', $quiz) }}" method="post">
     @csrf
 
+    @if ($errors->has('quiz'))
+    <div class="center error-msg mb4" role="alert">
+        {{ $errors->first('quiz') }}
+    </div>
+    @endif
+
     @foreach ($quiz['questions'] as $question)
-    <x-question :question="$question" />
+    <x-question :question="$question" :error="$errors->first('answers.' . $question->id)" />
     @endforeach
 
     <button type="submit" class="center green-btn">Submit</button>

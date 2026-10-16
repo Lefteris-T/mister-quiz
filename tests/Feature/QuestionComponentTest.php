@@ -43,6 +43,22 @@ class QuestionComponentTest extends TestCase
         $this->assertSame(4, substr_count((string) $view, 'type="radio"'));
     }
 
+    public function test_the_question_is_marked_with_its_message_only_when_there_is_an_error()
+    {
+        $view = $this->blade(
+            '<x-question :question="$question" error="Please answer this question." />',
+            ['question' => $this->questionWithAnswers()]
+        );
+
+        $view->assertSee('class="mb4 unanswered"', false);
+        $view->assertSee('Please answer this question.');
+
+        $plain = $this->blade('<x-question :question="$question" />', ['question' => $this->questionWithAnswers()]);
+
+        $plain->assertDontSee('unanswered');
+        $plain->assertDontSee('Please answer this question.');
+    }
+
     public function test_no_answer_is_selected_in_advance()
     {
         $this->blade('<x-question :question="$question" />', ['question' => $this->questionWithAnswers()])

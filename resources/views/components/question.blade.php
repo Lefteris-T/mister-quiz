@@ -1,7 +1,11 @@
-@props(['question'=>$question])
+@props(['question'=>$question, 'error' => null])
 
-<div class="mb4">
+<div class="mb4{{ $error ? ' unanswered' : '' }}">
     <p class="center title">{{ $question->question }}</p>
+
+    @if ($error)
+    <p class="center error-msg">{{ $error }}</p>
+    @endif
 
     <div class="checkboxes-wrapper" class="center">
         @foreach ($question->answers as $answer)

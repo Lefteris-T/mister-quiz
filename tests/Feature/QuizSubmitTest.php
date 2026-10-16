@@ -217,4 +217,58 @@ class QuizSubmitTest extends TestCase
             $page->assertSee('value="' . $answerId . '" checked', false);
         }
     }
+
+    public function test_a_rejected_submit_shows_a_message_and_marks_the_unanswered_questions()
+    {
+        $user = User::factory()->create();
+        $quiz = $this->openQuiz($user);
+
+        $answers = $this->fullAnswers($quiz);
+        foreach (array_slice(array_keys($answers), 0, 3) as $questionId) {
+            unset($answers[$questionId]);
+        }
+
+        $page = $this->actingAs($user)
+            ->followingRedirects()
+            ->post(route('quiz.submit', $quiz), ['answers' => $answers])
+            ->assertOk()
+            ->assertSee(self::MISSING);
+
+        $html = $page->getContent();
+
+        $this->assertSame(1, substr_count($html, self::MISSING));
+        $this->assertSame(3, substr_count($html, 'class="mb4 unanswered"'));
+        $this->assertSame(3, substr_count($html, 'Please answer this question.'));
+    }
+
+    public function test_an_invalid_answer_shows_its_own_message_on_its_question()
+    {
+        $user = User::factory()->create();
+        $quiz = $this->openQuiz($user);
+
+        $answers = $this->fullAnswers($quiz);
+        $answers[array_key_first($answers)] = 999999;
+
+        $html = $this->actingAs($user)
+            ->followingRedirects()
+            ->post(route('quiz.submit', $quiz), ['answers' => $answers])
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(2, substr_count($html, self::INVALID));
+        $this->assertSame(1, substr_count($html, 'class="mb4 unanswered"'));
+        $this->assertStringNotContainsString(self::MISSING, $html);
+    }
+
+    public function test_a_fresh_quiz_page_shows_no_error_and_marks_nothing()
+    {
+        $user = User::factory()->create();
+        $this->openQuiz($user);
+
+        $this->actingAs($user)->get('/quiz')
+            ->assertOk()
+            ->assertDontSee(self::MISSING)
+            ->assertDontSee('Please answer this question.')
+            ->assertDontSee('unanswered');
+    }
 }
