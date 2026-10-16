@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\MessageBag;
 
 class QuestionController extends Controller
 {
@@ -21,6 +22,53 @@ class QuestionController extends Controller
         }
 
         return view('questions.list', ['quiz' => $quiz]);
+    }
+
+    public function submit(Request $request, Quiz $quiz)
+    {
+        //only the owner of the quiz can submit it
+        abort_unless((int) $quiz->user_id === (int) $request->user()->id, 403);
+
+        if ((int) $quiz->completed === 1) {
+            return redirect()->route('quiz')->withErrors(['quiz' => 'This quiz has already been submitted.']);
+        }
+
+        //every question of this quiz needs one answer, and the answer must belong to that question
+        $questionIds = $quiz->questions()->pluck('question.id');
+
+        $allowed = Answer::whereIn('question_id', $questionIds)->get(['id', 'question_id'])
+            ->groupBy('question_id')
+            ->map(function ($answers) {
+                return $answers->pluck('id')->map(function ($id) {
+                    return (string) $id;
+                })->all();
+            });
+
+        $submitted = $request->input('answers');
+        $submitted = is_array($submitted) ? $submitted : [];
+
+        $errors = new MessageBag();
+        $missing = false;
+
+        foreach ($questionIds as $questionId) {
+            $answer = $submitted[$questionId] ?? null;
+
+            if ($answer === null || $answer === '') {
+                $missing = true;
+                $errors->add('answers.' . $questionId, 'Please answer this question.');
+            } elseif (!is_scalar($answer) || !in_array((string) $answer, $allowed[$questionId] ?? [], true)) {
+                $errors->add('answers.' . $questionId, 'The selected answer is invalid.');
+            }
+        }
+
+        if ($errors->isNotEmpty()) {
+            $errors->add('quiz', $missing ? 'Please answer every question before you submit.' : 'The selected answer is invalid.');
+
+            return redirect()->route('quiz')->withErrors($errors)->withInput($request->only('answers'));
+        }
+
+        //the answers are complete and valid; scoring and the results page come with #29 to #31
+        return redirect()->route('quiz');
     }
 
 

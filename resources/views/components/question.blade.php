@@ -7,7 +7,7 @@
         @foreach ($question->answers as $answer)
         <div class="checkbox">
             <label>
-                <input type="radio" name="answers[{{ $question->id }}]" value="{{ $answer->id }}">
+                <input type="radio" name="answers[{{ $question->id }}]" value="{{ $answer->id }}"@if ((string) old('answers.' . $question->id) === (string) $answer->id) checked @endif>
                 <span>{{ $answer->answer }}</span>
             </label>
         </div>

@@ -37,3 +37,4 @@ Route::get('/profile', [ProfileController::class, 'index'])->name('profile')->mi
 Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard');
 
 Route::get('/quiz', [QuestionController::class, 'index'])->name('quiz')->middleware('auth');
+Route::post('/quiz/{quiz}', [QuestionController::class, 'submit'])->name('quiz.submit')->middleware('auth');

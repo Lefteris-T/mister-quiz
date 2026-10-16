@@ -3,7 +3,7 @@
 @section('content')
 
 @if ($quiz)
-<form action="{{ route('quiz', $quiz) }}" method="post">
+<form action="{{ route('quiz.submit', $quiz) }}" method="post">
     @csrf
 
     @foreach ($quiz['questions'] as $question)
