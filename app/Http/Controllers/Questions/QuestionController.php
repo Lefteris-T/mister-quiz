@@ -7,8 +7,8 @@ use App\Models\Answer;
 use App\Models\Question;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\MessageBag;
+use Illuminate\Support\Facades\DB;
 
 class QuestionController extends Controller
 {
@@ -67,53 +67,64 @@ class QuestionController extends Controller
             return redirect()->route('quiz')->withErrors($errors)->withInput($request->only('answers'));
         }
 
-        //the answers are complete and valid; scoring and the results page come with #29 to #31
-        return redirect()->route('quiz');
+        $accepted = DB::transaction(function () use ($quiz, $questionIds, $submitted) {
+            $claimed = Quiz::whereKey($quiz->id)
+                ->where('completed', 0)
+                ->update(['completed' => 1]);
+
+            if ($claimed !== 1) {
+                return false;
+            }
+
+            foreach ($questionIds as $questionId) {
+                $quiz->questions()->updateExistingPivot($questionId, [
+                    'answer_id' => (int) $submitted[$questionId],
+                ]);
+            }
+
+            return true;
+        });
+
+        if (!$accepted) {
+            return redirect()->route('quiz')->withErrors(['quiz' => 'This quiz has already been submitted.']);
+        }
+
+        return redirect()->route('quiz.results', $quiz);
     }
 
-
-
-
-    public function results(Request $request)
+    public function results(Request $request, Quiz $quiz)
     {
-        //get quiz from DB
-        $quiz = Quiz::where('id', $request->quiz)->get()->first();
-        $request = $request->all();
-        //makes quiz completed
-        $quiz['completed'] = 1;
+        abort_unless((int) $quiz->user_id === (int) $request->user()->id, 403);
 
-        $results = array('overall' => 0, 'art' => 0, 'geography' => 0, 'history' => 0, 'science' => 0, 'sports' => 0);
-        $xp = 0;
-
-        //figuring out which answers are correct
-        foreach ($request as $key => $value) {
-            if (is_numeric($key)) {
-                $correct_answer = Answer::where('question_id', $key)->where('correct', 1)->get()->first()['answer'];
-                if ($correct_answer == $value) {
-                    $question = Question::where('id', $key)->get()->first();
-                    $results['overall']++;
-                }
-            }
+        if ((int) $quiz->completed !== 1) {
+            return redirect()->route('quiz')
+                ->withErrors(['quiz' => 'This quiz has not been submitted.']);
         }
 
-        //adding xp to the 
-        Auth::user()['xp'] += $xp;
+        $quiz->load('questions.answers');
 
-        //adding categories score to the user
-        foreach ($results as $key => $value) {
-            if ($key != 'overall') {
-                [$correct, $total] = [explode("/", Auth::user()[$key])[0], explode("/", Auth::user()[$key])[1]];
-                Auth::user()[$key] = ($correct + $value) . "/" . ($total + 4);
-            }
+        $results = [
+            'overall' => ['correct' => 0, 'total' => 0],
+        ];
+
+        foreach (Question::CATEGORIES as $category) {
+            $results[strtolower($category)] = ['correct' => 0, 'total' => 0];
         }
 
-        //adding xp to the user
-        Auth::user()['xp'] += $xp;
+        foreach ($quiz->questions as $question) {
+            $categoryKey = strtolower($question->category);
+            $correctAnswer = $question->answers->firstWhere('correct', 1);
+            $isCorrect = $correctAnswer
+                && (int) $question->pivot->answer_id === (int) $correctAnswer->id;
 
-        //save changes in DB
-        Auth::user()->save();
-        $quiz->save();
+            $results['overall']['total']++;
+            $results[$categoryKey]['total']++;
 
+            if ($isCorrect) {
+                $results['overall']['correct']++;
+                $results[$categoryKey]['correct']++;
+            }
+        }
 
         return view('questions.results', ['results' => $results]);
     }

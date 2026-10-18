@@ -46,6 +46,28 @@ class QuizSubmitTest extends TestCase
         })->all();
     }
 
+    private function answersWithCorrectPerCategory(Quiz $quiz, int $correctPerCategory): array
+    {
+        $answers = [];
+        $correctCounts = [];
+
+        foreach ($quiz->questions as $question) {
+            $category = $question->category;
+            $correctCount = $correctCounts[$category] ?? 0;
+
+            if ($correctCount < $correctPerCategory) {
+                $answer = $question->answers->firstWhere('correct', 1);
+                $correctCounts[$category] = $correctCount + 1;
+            } else {
+                $answer = $question->answers->firstWhere('correct', 0);
+            }
+
+            $answers[$question->id] = $answer->id;
+        }
+
+        return $answers;
+    }
+
     private function submit(User $user, Quiz $quiz, array $answers)
     {
         return $this->actingAs($user)->post(route('quiz.submit', $quiz), ['answers' => $answers]);
@@ -70,18 +92,37 @@ class QuizSubmitTest extends TestCase
             ->assertSee('action="' . route('quiz.submit', $quiz) . '"', false);
     }
 
-    public function test_a_complete_valid_submit_is_accepted_and_nothing_is_scored_yet()
+    public function test_a_complete_valid_submit_saves_answers_and_completes_the_quiz()
     {
         $user = User::factory()->create();
         $quiz = $this->openQuiz($user);
+        $answers = $this->fullAnswers($quiz);
 
-        $answers = $this->fullAnswers($quiz) + [999999 => 1];
+        // Το ID δεν ανήκει στο quiz και δεν πρέπει να αποθηκευτεί.
+        $submittedAnswers = $answers + [999999 => 1];
 
-        $this->submit($user, $quiz, $answers)
-            ->assertRedirect(route('quiz'))
+        $this->submit($user, $quiz, $submittedAnswers)
+            ->assertRedirect('/quiz/' . $quiz->id . '/results')
             ->assertSessionHasNoErrors();
 
-        $this->assertNothingChanged($user, $quiz);
+        $this->assertSame(1, (int) $quiz->fresh()->completed);
+
+        foreach ($answers as $questionId => $answerId) {
+            $savedAnswerId = DB::table('question_quiz')
+                ->where('quiz_id', $quiz->id)
+                ->where('question_id', $questionId)
+                ->value('answer_id');
+
+            $this->assertSame((int) $answerId, (int) $savedAnswerId);
+        }
+
+        $this->assertSame(
+            0,
+            DB::table('question_quiz')
+                ->where('quiz_id', $quiz->id)
+                ->where('question_id', 999999)
+                ->count()
+        );
     }
 
     public function test_a_missing_answer_is_rejected_and_the_chosen_answers_are_kept()
@@ -270,5 +311,71 @@ class QuizSubmitTest extends TestCase
             ->assertDontSee(self::MISSING)
             ->assertDontSee('Please answer this question.')
             ->assertDontSee('unanswered');
+    }
+
+    public function test_results_count_correct_answers_only_for_questions_in_the_quiz()
+    {
+        $user = User::factory()->create();
+        $quiz = $this->openQuiz($user);
+        $answers = $this->answersWithCorrectPerCategory($quiz, 2);
+
+        // Το extra ID υποβάλλεται, αλλά δεν ανήκει στο quiz.
+        $this->submit($user, $quiz, $answers + [999999 => 1])
+            ->assertRedirect('/quiz/' . $quiz->id . '/results');
+
+        $path = '/quiz/' . $quiz->id . '/results';
+
+        $firstVisit = $this->actingAs($user)->get($path)->assertOk();
+        $firstVisit->assertSee('10 / 20');
+        $this->assertSame(5, substr_count($firstVisit->getContent(), '2 / 4'));
+
+        // Η ανανέωση ξαναδιαβάζει τα αποθηκευμένα αποτελέσματα.
+        $refresh = $this->actingAs($user)->get($path)->assertOk();
+        $refresh->assertSee('10 / 20');
+        $this->assertSame(5, substr_count($refresh->getContent(), '2 / 4'));
+    }
+
+    public function test_results_use_the_actual_number_of_questions_in_each_category()
+    {
+        $user = User::factory()->create();
+        $quiz = $this->openQuiz($user);
+
+        $artQuestionIds = $quiz->questions
+            ->where('category', 'Art')
+            ->take(2)
+            ->pluck('id')
+            ->all();
+
+        $quiz->questions()->detach($artQuestionIds);
+        $quiz->unsetRelation('questions');
+        $quiz->load('questions.answers');
+
+        $answers = $this->answersWithCorrectPerCategory($quiz, PHP_INT_MAX);
+
+        $this->submit($user, $quiz, $answers)
+            ->assertRedirect('/quiz/' . $quiz->id . '/results');
+
+        $page = $this->actingAs($user)
+            ->get('/quiz/' . $quiz->id . '/results')
+            ->assertOk();
+
+        $page->assertSee('18 / 18');
+        $page->assertSee('2 / 2');
+
+        $this->assertSame(4, substr_count($page->getContent(), '4 / 4'));
+    }
+
+    public function test_a_user_cannot_view_another_users_results()
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $quiz = $this->openQuiz($owner);
+
+        $this->submit($owner, $quiz, $this->fullAnswers($quiz))
+            ->assertRedirect('/quiz/' . $quiz->id . '/results');
+
+        $this->actingAs($otherUser)
+            ->get('/quiz/' . $quiz->id . '/results')
+            ->assertForbidden();
     }
 }

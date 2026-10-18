@@ -38,3 +38,7 @@ Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leade
 
 Route::get('/quiz', [QuestionController::class, 'index'])->name('quiz')->middleware('auth');
 Route::post('/quiz/{quiz}', [QuestionController::class, 'submit'])->name('quiz.submit')->middleware('auth');
+
+Route::get('/quiz/{quiz}/results', [QuestionController::class, 'results'])
+    ->name('quiz.results')
+    ->middleware('auth');
