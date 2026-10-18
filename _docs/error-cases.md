@@ -34,6 +34,11 @@ This document outlines the expected error handling behavior and validation rules
 | E15 | Wrong HTTP method | `POST /`, `GET /logout` (after fix) | `405 Method Not Allowed` |
 | E16 | Form without CSRF token | `POST /login` without `_token` | `419 Page Expired` |
 | E17 | Internal server error | Database stopped, `GET /leaderboard` | `500 Server Error`, no stack trace when `APP_DEBUG=false` |
+| E18 | Wrong method on the quiz submit address | `GET /quiz/c`, `GET /quiz/1` | `405 Method Not Allowed` (`Allow: POST`) |
+| E19 | Unknown quiz id on the submit address | `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/999999` (logged in) | `404 Not Found`, nothing scored |
+| E20 | Method that the submit address never accepts | `PUT /quiz/1`, `DELETE /quiz/1` | `405 Method Not Allowed` (`Allow: POST`) |
+| E21 | Write method on a page that only reads | `POST /`, `/quiz`, `/profile`, `/leaderboard` | `405 Method Not Allowed` (`Allow: GET, HEAD`) |
+| E22 | Address with an extra part or other letter case | `GET /profile/2`, `/leaderboard/1`, `/quiz/1/results`, `/Quiz` | `404 Not Found` |
 
 ---
 
@@ -394,6 +399,7 @@ HTTP/1.1 404 Not Found
 **Validation Rules:**
 - **Status Code:** exactly `404 Not Found` for every undefined path.
 - **No file access:** only files inside `public/` are served; path traversal never returns files from outside it.
+- **More addresses:** an address with an extra part (`/profile/2`, `/quiz/1/results`) is [E22](#error-case-e22-address-with-an-extra-part-or-other-letter-case). Why some wrong addresses give `405` and not `404`: see [E18](#error-case-e18-wrong-method-on-the-quiz-submit-address).
 
 ---
 
@@ -417,6 +423,7 @@ HTTP/1.1 405 Method Not Allowed
 **Validation Rules:**
 - **Status Code:** exactly `405 Method Not Allowed`.
 - **Logout by link:** a plain link or an image tag pointing to `/logout` cannot sign the user out.
+- **The quiz submit address and the read-only pages:** see [E18](#error-case-e18-wrong-method-on-the-quiz-submit-address), [E20](#error-case-e20-method-that-the-submit-address-never-accepts) and [E21](#error-case-e21-write-method-on-a-page-that-only-reads).
 
 ---
 
@@ -470,3 +477,141 @@ Server Error
 - **Data Security:** no SQL, stack trace, file path, `.env` value or password in the response.
 - **Log:** the details are written to `storage/logs/laravel.log`.
 - **After the test:** set `APP_DEBUG=true` again and run `docker compose up -d`.
+
+---
+
+### Error Case E18: Wrong Method on the Quiz Submit Address
+**Description:**  
+A visitor types `http://localhost:8000/quiz/c` (or `/quiz/1`) in the address bar. The address `/quiz/{quiz}` exists, but only for `POST` (the Submit button of the quiz), and a browser address bar sends `GET`. Laravel asks two questions in this order: *is there a route with this address?* (yes) and *does it accept this method?* (no). So the answer is `405`, not `404`. `/profile/1`, which no route has, is a `404` ([E22](#error-case-e22-address-with-an-extra-part-or-other-letter-case)). The same explanation is in the [README](../README.md#error-handling), section "404 or 405? Why `/quiz/c` is not a 404".
+
+---
+
+**Request (cURL or Browser):**
+```bash
+curl -i http://localhost:8000/quiz/c
+curl -i http://localhost:8000/quiz/1
+```
+
+**Expected Output / Behavior:**
+```http
+HTTP/1.1 405 Method Not Allowed
+Allow: POST
+
+405 | Method Not Allowed
+```
+
+**Validation Rules:**
+- **Status Code:** exactly `405`, also for a guest (the route is matched before the `auth` middleware runs). Never `404` and never `500`.
+- **Allow header:** it lists `POST`, the only method that works.
+- **Nothing changes:** no quiz is read, created or scored.
+- **Page:** the `405` page looks like the `404` page, and no developer page is shown when `APP_DEBUG=true` (issue #51).
+- **Test:** issue #50.
+
+---
+
+### Error Case E19: Unknown Quiz Id on the Submit Address
+**Description:**  
+A logged-in user posts the quiz form to an id that is not a quiz: text, zero, a negative or decimal number, or a number that no quiz has. The address matches `/quiz/{quiz}` and the method is right, but the quiz cannot be loaded. The same as [E13](#error-case-e13-tampered-quiz-submit) case b), with more kinds of ids.
+
+---
+
+**Request (Browser):**
+```plaintext
+Log in, open /quiz, change the action of the form in DevTools to /quiz/c, click Submit
+(then the same with /quiz/0, /quiz/-1, /quiz/1.5 and /quiz/999999)
+```
+
+**Expected Output / Behavior:**
+```http
+HTTP/1.1 404 Not Found
+```
+
+**Validation Rules:**
+- **Status Code:** exactly `404` for every id above. Never `500` (no database error from a text id).
+- **Nothing scored:** XP, category scores and `completed` of every quiz stay unchanged.
+- **Another user's quiz:** an id that exists but belongs to someone else is `403`, see E13.
+- **Page:** the `404` page.
+- **Test:** issue #50.
+
+---
+
+### Error Case E20: Method That the Submit Address Never Accepts
+**Description:**  
+A request with `PUT` or `DELETE` to the quiz submit address. Only `POST` is allowed there.
+
+---
+
+**Request (cURL):**
+```bash
+curl -i -X PUT http://localhost:8000/quiz/1
+curl -i -X DELETE http://localhost:8000/quiz/1
+```
+
+**Expected Output / Behavior:**
+```http
+HTTP/1.1 405 Method Not Allowed
+Allow: POST
+```
+
+**Validation Rules:**
+- **Status Code:** exactly `405`, before any token check (no `419`) and before any login check.
+- **Nothing changes:** no quiz is read, created or deleted.
+- **Page:** the `405` page (issue #51).
+- **Test:** issue #50.
+
+---
+
+### Error Case E21: Write Method on a Page That Only Reads
+**Description:**  
+A `POST` to the homepage, the quiz page, the profile or the leaderboard. These four addresses answer `GET` only.
+
+---
+
+**Request (cURL):**
+```bash
+curl -i -X POST http://localhost:8000/
+curl -i -X POST http://localhost:8000/quiz
+curl -i -X POST http://localhost:8000/profile
+curl -i -X POST http://localhost:8000/leaderboard
+```
+
+**Expected Output / Behavior:**
+```http
+HTTP/1.1 405 Method Not Allowed
+Allow: GET, HEAD
+```
+
+**Validation Rules:**
+- **Status Code:** exactly `405` for all four, also for a guest (never `302` to the login page and never `419`).
+- **Nothing changes:** no data is created or changed.
+- **Page:** the `405` page (issue #51).
+- **Test:** issue #50.
+
+---
+
+### Error Case E22: Address with an Extra Part or Other Letter Case
+**Description:**  
+A path that looks like a real page but that no route defines: an id after a page that has no id (`/profile/2`, `/leaderboard/1`), a sub-page that does not exist (`/quiz/1/results`), or the wrong letter case (`/Quiz`). Addresses are case sensitive. Because no route has this address, the first question of Laravel already fails, so the answer is `404` and not `405` (see [E18](#error-case-e18-wrong-method-on-the-quiz-submit-address)).
+
+---
+
+**Request (cURL or Browser):**
+```bash
+curl -i http://localhost:8000/profile/2
+curl -i http://localhost:8000/leaderboard/1
+curl -i http://localhost:8000/quiz/1/results
+curl -i http://localhost:8000/Quiz
+```
+
+**Expected Output / Behavior:**
+```http
+HTTP/1.1 404 Not Found
+
+404 | Not Found
+```
+
+**Validation Rules:**
+- **Status Code:** exactly `404` for all four, also for a guest (no redirect to the login page).
+- **No profile by id:** `/profile/2` never shows the profile of another user (see also [E12](#error-case-e12-guest-opens-a-protected-page)).
+- **Page:** the `404` page.
+- **Test:** issue #50.
