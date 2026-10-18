@@ -257,6 +257,26 @@ Final paths and names are fixed in issues **#20** and **#25**. The full contract
 
 All cases are listed in [`_docs/error-cases.md`](_docs/error-cases.md).
 
+### 404 or 405? Why `/quiz/c` is not a 404
+
+Laravel asks two questions, in this order:
+
+1. **Is there a route with this address?** If not: `404 Not Found`.
+2. **Does that route accept the method of the request?** If not: `405 Method Not Allowed`. The reply has an `Allow` header that lists the methods that would work.
+
+The address `/quiz/{quiz}` exists, but only for `POST` (the Submit button of the quiz). `{quiz}` matches any text, also `c`. A browser address bar sends `GET`, so `GET /quiz/c` passes question 1 and fails question 2. `/profile/1` has no route at all, so it fails question 1.
+
+| Request | Status | Why |
+|---|---|---|
+| `GET /nonexistent`, `/profile/1`, `/leaderboard/1`, `/quiz/1/results` | `404` | no route has this address |
+| `GET /quiz/c`, `GET /quiz/1` | `405`, `Allow: POST` | `/quiz/{quiz}` exists, for `POST` only |
+| `PUT` or `DELETE /quiz/1` | `405` | the address exists, the method is not allowed |
+| `POST /`, `/quiz`, `/profile`, `/leaderboard` | `405` | these pages only read (`GET`) |
+| `POST /quiz/c`, `/quiz/0`, `/quiz/999999` (logged in) | `404` | the route matches, but no quiz has this id |
+| `POST /quiz/{quiz of another user}` | `403` | the quiz exists, but it is not yours |
+
+We keep `405` on purpose: it is the correct HTTP answer, and it tells the client which method works. The `405` page looks like the `404` page.
+
 ## Testing
 
 - **Feature tests** (`tests/Feature/`): register, login, homepage buttons, quiz start, submit rules, results, profile, leaderboard.

@@ -73,6 +73,7 @@ The website lets a player register, log in, answer a quiz of questions from five
 
 - **Missing Input:** form fields are validated on the server; the user returns to the form with a message per field and keeps the typed values (except passwords).
 - **Invalid Input:** wrong login → `These credentials do not match our records.`; duplicate email → `The email has already been taken.`; incomplete quiz → error and nothing scored.
+- **Wrong Address or Method:** an address that no route defines (`/profile/2`) → `404`. An address that exists, but not for this method (`GET /quiz/c`, because `/quiz/{quiz}` is `POST` only) → `405` with an `Allow` header. Both show the same style of error page. Details: [error-cases.md](error-cases.md) E18–E22 and the README, section Error Handling.
 - **Edge Cases:** `0/0` shows `0%`; rank ranges are half-open; a second submit of the same quiz changes nothing; a leaderboard with fewer than 10 players shows only real rows. Details: [edge-cases.md](edge-cases.md).
 
 ---
@@ -164,6 +165,11 @@ The program follows a **validate-first, fail-safe** strategy.
 - [ ] **Error Case E11**: ***Quiz submitted with a missing answer*** | **Input Argument**: `POST /quiz/{quiz}` without one answer | **Expected Behavior/Output**: `302` → `/quiz` + error; nothing scored
 - [ ] **Error Case E12**: ***Guest opens a protected page*** | **Input Argument**: `GET /quiz`, `GET /profile` | **Expected Behavior/Output**: `302` → `/login`
 - [ ] **Error Case E13**: ***Tampered quiz submit*** | **Input Argument**: another user's quiz / unknown quiz / foreign answer id | **Expected Behavior/Output**: `403` / `404` / `302` + error; nothing scored
+- [ ] **Error Case E18**: ***Wrong method on the quiz submit address*** | **Input Argument**: `GET /quiz/c`, `GET /quiz/1` | **Expected Behavior/Output**: `405` + `Allow: POST` (the address exists for `POST` only), the `405` page looks like the `404` page
+- [ ] **Error Case E19**: ***Unknown quiz id on the submit address*** | **Input Argument**: `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/999999` (logged in) | **Expected Behavior/Output**: `404`; nothing scored
+- [ ] **Error Case E20**: ***Method that the submit address never accepts*** | **Input Argument**: `PUT /quiz/1`, `DELETE /quiz/1` | **Expected Behavior/Output**: `405` + `Allow: POST`
+- [ ] **Error Case E21**: ***Write method on a page that only reads*** | **Input Argument**: `POST /`, `/quiz`, `/profile`, `/leaderboard` | **Expected Behavior/Output**: `405` + `Allow: GET, HEAD`
+- [ ] **Error Case E22**: ***Address with an extra part or other letter case*** | **Input Argument**: `GET /profile/2`, `/leaderboard/1`, `/quiz/1/results`, `/Quiz` | **Expected Behavior/Output**: `404`
 
 ### 6.3 Edge & Boundary Cases
 - [ ] **Edge Case EC01**: ***Rank boundaries*** | **Input Argument**: XP 1499, 1500, 4999, 5000, 9999, 10000 | **Expected Behavior/Output**: Aprentice, Average, Average, Epic, Epic, Master
