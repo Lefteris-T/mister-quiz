@@ -169,7 +169,7 @@ The program follows a **validate-first, fail-safe** strategy.
 - [ ] **Error Case E19**: ***Unknown quiz id on the submit address*** | **Input Argument**: `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/999999` (logged in) | **Expected Behavior/Output**: `404`; nothing scored
 - [ ] **Error Case E20**: ***Method that the submit address never accepts*** | **Input Argument**: `PUT /quiz/1`, `DELETE /quiz/1` | **Expected Behavior/Output**: `405` + `Allow: POST`
 - [ ] **Error Case E21**: ***Write method on a page that only reads*** | **Input Argument**: `POST /`, `/quiz`, `/profile`, `/leaderboard` | **Expected Behavior/Output**: `405` + `Allow: GET, HEAD`
-- [ ] **Error Case E22**: ***Address with an extra part or other letter case*** | **Input Argument**: `GET /profile/2`, `/leaderboard/1`, `/quiz/1/results`, `/Quiz` | **Expected Behavior/Output**: `404`
+- [ ] **Error Case E22**: ***Address with an extra part or other letter case*** | **Input Argument**: `GET /profile/2`, `/leaderboard/1`, `/quiz/1/answers`, `/Quiz` | **Expected Behavior/Output**: `404`
 
 ### 6.3 Edge & Boundary Cases
 - [ ] **Edge Case EC01**: ***Rank boundaries*** | **Input Argument**: XP 1499, 1500, 4999, 5000, 9999, 10000 | **Expected Behavior/Output**: Aprentice, Average, Average, Epic, Epic, Master
