@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Answer;
 use App\Models\Question;
 use App\Models\Quiz;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\MessageBag;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\MessageBag;
 
 class QuestionController extends Controller
 {
@@ -76,11 +77,53 @@ class QuestionController extends Controller
                 return false;
             }
 
-            foreach ($questionIds as $questionId) {
-                $quiz->questions()->updateExistingPivot($questionId, [
-                    'answer_id' => (int) $submitted[$questionId],
-                ]);
+            $user = User::whereKey($quiz->user_id)->lockForUpdate()->firstOrFail();
+
+            $questions = Question::with('answers')
+                ->whereIn('id', $questionIds)
+                ->get()
+                ->keyBy('id');
+
+            $categoryStats = [];
+
+            foreach (Question::CATEGORIES as $category) {
+                $categoryStats[strtolower($category)] = ['correct' => 0, 'total' => 0];
             }
+
+            $earnedXp = 0;
+
+            foreach ($questionIds as $questionId) {
+                $question = $questions->get($questionId);
+                $selectedAnswerId = (int) $submitted[$questionId];
+
+                $quiz->questions()->updateExistingPivot($questionId, [
+                    'answer_id' => $selectedAnswerId,
+                ]);
+
+                $categoryKey = strtolower($question->category);
+                $correctAnswer = $question->answers->firstWhere('correct', 1);
+
+                $categoryStats[$categoryKey]['total']++;
+
+                if ($correctAnswer && $selectedAnswerId === (int) $correctAnswer->id) {
+                    $categoryStats[$categoryKey]['correct']++;
+                    $earnedXp += (int) $question->xp;
+                }
+            }
+
+            foreach ($categoryStats as $category => $stats) {
+                [$currentCorrect, $currentTotal] = array_map(
+                    'intval',
+                    explode('/', $user->{$category})
+                );
+
+                $user->{$category} = ($currentCorrect + $stats['correct'])
+                    . '/'
+                    . ($currentTotal + $stats['total']);
+            }
+
+            $user->xp = (int) $user->xp + $earnedXp;
+            $user->save();
 
             return true;
         });

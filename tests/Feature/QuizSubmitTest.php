@@ -98,7 +98,7 @@ class QuizSubmitTest extends TestCase
         $quiz = $this->openQuiz($user);
         $answers = $this->fullAnswers($quiz);
 
-        // Το ID δεν ανήκει στο quiz και δεν πρέπει να αποθηκευτεί.
+        // This ID does not belong to the quiz and must not be saved.
         $submittedAnswers = $answers + [999999 => 1];
 
         $this->submit($user, $quiz, $submittedAnswers)
@@ -313,13 +313,122 @@ class QuizSubmitTest extends TestCase
             ->assertDontSee('unanswered');
     }
 
+    public function test_correct_answers_add_question_xp_and_update_category_scores()
+    {
+        $user = User::factory()->create();
+        $quiz = $this->openQuiz($user);
+
+        foreach ($quiz->questions as $index => $question) {
+            DB::table('question')
+                ->where('id', $question->id)
+                ->update(['xp' => ($index + 1) * 10]);
+        }
+
+        $quiz->unsetRelation('questions');
+        $quiz->load('questions.answers');
+
+        $answers = $this->answersWithCorrectPerCategory($quiz, 2);
+        $expectedXp = 0;
+
+        foreach ($quiz->questions as $question) {
+            $selectedAnswer = $question->answers
+                ->firstWhere('id', $answers[$question->id]);
+
+            if ((int) $selectedAnswer->correct === 1) {
+                $expectedXp += (int) $question->xp;
+            }
+        }
+
+        $this->submit($user, $quiz, $answers)
+            ->assertRedirect('/quiz/' . $quiz->id . '/results');
+
+        $this->assertSame($expectedXp, (int) $user->fresh()->xp);
+
+        foreach (['art', 'history', 'geography', 'science', 'sports'] as $category) {
+            $this->assertSame('2/4', $user->fresh()->{$category}, $category);
+        }
+    }
+
+    public function test_scores_accumulate_across_completed_quizzes()
+    {
+        $user = User::factory()->create();
+
+        $firstQuiz = $this->openQuiz($user);
+        $firstAnswers = $this->answersWithCorrectPerCategory($firstQuiz, 1);
+        $firstXp = 0;
+
+        foreach ($firstQuiz->questions as $question) {
+            $answer = $question->answers
+                ->firstWhere('id', $firstAnswers[$question->id]);
+
+            if ((int) $answer->correct === 1) {
+                $firstXp += (int) $question->xp;
+            }
+        }
+
+        $this->submit($user, $firstQuiz, $firstAnswers)
+            ->assertRedirect('/quiz/' . $firstQuiz->id . '/results');
+
+        $secondQuiz = $this->openQuiz($user);
+        $secondAnswers = $this->answersWithCorrectPerCategory($secondQuiz, PHP_INT_MAX);
+        $secondXp = 0;
+
+        foreach ($secondQuiz->questions as $question) {
+            $answer = $question->answers
+                ->firstWhere('id', $secondAnswers[$question->id]);
+
+            if ((int) $answer->correct === 1) {
+                $secondXp += (int) $question->xp;
+            }
+        }
+
+        $this->submit($user, $secondQuiz, $secondAnswers)
+            ->assertRedirect('/quiz/' . $secondQuiz->id . '/results');
+
+        $this->assertSame($firstXp + $secondXp, (int) $user->fresh()->xp);
+
+        foreach (['art', 'history', 'geography', 'science', 'sports'] as $category) {
+            $this->assertSame('5/8', $user->fresh()->{$category}, $category);
+        }
+    }
+
+    public function test_submitting_the_same_quiz_again_does_not_change_user_scores()
+    {
+        $user = User::factory()->create();
+        $quiz = $this->openQuiz($user);
+        $answers = $this->answersWithCorrectPerCategory($quiz, 1);
+
+        $this->submit($user, $quiz, $answers)
+            ->assertRedirect('/quiz/' . $quiz->id . '/results');
+
+        $xpAfterFirstSubmit = (int) $user->fresh()->xp;
+        $scoresAfterFirstSubmit = [];
+
+        foreach (['art', 'history', 'geography', 'science', 'sports'] as $category) {
+            $scoresAfterFirstSubmit[$category] = $user->fresh()->{$category};
+        }
+
+        $this->submit($user, $quiz, $answers)
+            ->assertRedirect(route('quiz'))
+            ->assertSessionHasErrors([
+                'quiz' => 'This quiz has already been submitted.',
+            ]);
+
+        $this->assertSame(1, (int) $quiz->fresh()->completed);
+        $this->assertSame($xpAfterFirstSubmit, (int) $user->fresh()->xp);
+
+        foreach ($scoresAfterFirstSubmit as $category => $score) {
+            $this->assertSame($score, $user->fresh()->{$category}, $category);
+        }
+    }
+
     public function test_results_count_correct_answers_only_for_questions_in_the_quiz()
     {
         $user = User::factory()->create();
         $quiz = $this->openQuiz($user);
         $answers = $this->answersWithCorrectPerCategory($quiz, 2);
 
-        // Το extra ID υποβάλλεται, αλλά δεν ανήκει στο quiz.
+        // The extra ID is submitted but does not belong to this quiz.
         $this->submit($user, $quiz, $answers + [999999 => 1])
             ->assertRedirect('/quiz/' . $quiz->id . '/results');
 
@@ -329,7 +438,7 @@ class QuizSubmitTest extends TestCase
         $firstVisit->assertSee('10 / 20');
         $this->assertSame(5, substr_count($firstVisit->getContent(), '2 / 4'));
 
-        // Η ανανέωση ξαναδιαβάζει τα αποθηκευμένα αποτελέσματα.
+        // Refreshing the page reads the saved results again.
         $refresh = $this->actingAs($user)->get($path)->assertOk();
         $refresh->assertSee('10 / 20');
         $this->assertSame(5, substr_count($refresh->getContent(), '2 / 4'));
@@ -354,6 +463,12 @@ class QuizSubmitTest extends TestCase
 
         $this->submit($user, $quiz, $answers)
             ->assertRedirect('/quiz/' . $quiz->id . '/results');
+
+        $this->assertSame('2/2', $user->fresh()->art);
+
+        foreach (['history', 'geography', 'science', 'sports'] as $category) {
+            $this->assertSame('4/4', $user->fresh()->{$category}, $category);
+        }
 
         $page = $this->actingAs($user)
             ->get('/quiz/' . $quiz->id . '/results')
