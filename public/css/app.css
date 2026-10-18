@@ -235,24 +235,91 @@ auth-input:focus {
 
 /*------------------------ Results ------------------------*/
 
-.results-wrapper {
-  display: inline-flex;
-  padding: 20px 30px;
-  border-radius: 15px;
-  box-shadow: 0px 0px 23px 33px #80808069;
-  background-color: #80808069;
+.results-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 24px 64px;
+  color: white;
+}
 
-  margin-top: 120px;
+.results-nav {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.results-nav .blue-btn {
+  display: inline-block;
+}
+
+.results-summary {
+  margin-top: 64px;
+  text-align: center;
+}
+
+.results-summary .title {
+  margin-bottom: 12px;
+}
+
+.results-summary > p {
+  margin: 12px 0;
+}
+
+.results-score {
+  color: rgb(78, 183, 243);
+  font-size: clamp(48px, 9vw, 70px);
+  font-weight: bold;
+}
+
+.results-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 16px;
+  box-sizing: border-box;
+  padding: 24px;
+  border-radius: 15px;
+  box-shadow: 0px 0px 23px #80808069;
+  background-color: #80808069;
+  margin-top: 48px;
 }
 
 .result {
-  margin: 0px 35px;
-  min-width: 200px;
   background-color: #0000002c;
-  padding: 3px 60px;
+  padding: 16px;
   border-radius: 20px;
   box-shadow: 0px 0px 20px #00000050;
   color: rgb(162, 212, 255);
+  text-align: center;
+}
+
+.result h2 {
+  margin: 0;
+}
+
+.result-score {
+  margin: 16px 0 0;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+@media (max-width: 600px) {
+  .results-page {
+    padding: 16px 12px 40px;
+  }
+
+  .results-nav .blue-btn {
+    padding: 12px 18px;
+    font-size: 18px;
+  }
+
+  .results-summary {
+    margin-top: 40px;
+  }
+
+  .results-wrapper {
+    padding: 16px;
+  }
 }
 
 /*---------------------------------------------------------*/
