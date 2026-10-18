@@ -358,7 +358,9 @@ auth-input:focus {
   margin: 0 0 0 40px;
 }
 
-.profile-table {
+/* The leaderboard table looks like the profile table. */
+.profile-table,
+.leaderboard-table {
   width: 80%;
   margin: 0 auto 60px;
   border-collapse: collapse;
@@ -367,14 +369,38 @@ auth-input:focus {
 }
 
 .profile-table th,
-.profile-table td {
+.profile-table td,
+.leaderboard-table th,
+.leaderboard-table td {
   padding: 12px 20px;
   border: 1px solid rgb(176, 176, 255);
   text-align: center;
 }
 
-.profile-table th {
+.profile-table th,
+.leaderboard-table th {
   color: rgb(78, 183, 243);
+}
+
+.leaderboard-empty {
+  text-align: center;
+  font-size: x-large;
+  color: white;
+}
+
+@media (max-width: 600px) {
+  .profile-table,
+  .leaderboard-table {
+    width: 96%;
+    font-size: medium;
+  }
+
+  .profile-table th,
+  .profile-table td,
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 8px 6px;
+  }
 }
 
 /*---------------------------------------------------------*/ ;
