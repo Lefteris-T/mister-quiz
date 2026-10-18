@@ -285,4 +285,29 @@ auth-input:focus {
   margin: 0;
 }
 
+.profile-rank {
+  font-variant: inherit;
+  font-size: 50px;
+  margin: 0 0 0 40px;
+}
+
+.profile-table {
+  width: 80%;
+  margin: 0 auto 60px;
+  border-collapse: collapse;
+  font-size: x-large;
+  color: white;
+}
+
+.profile-table th,
+.profile-table td {
+  padding: 12px 20px;
+  border: 1px solid rgb(176, 176, 255);
+  text-align: center;
+}
+
+.profile-table th {
+  color: rgb(78, 183, 243);
+}
+
 /*---------------------------------------------------------*/ ;
