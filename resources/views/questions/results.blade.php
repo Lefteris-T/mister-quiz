@@ -1,43 +1,25 @@
 @extends('app')
 
 @section('content')
+<main class="results-page">
+    <nav class="results-nav" aria-label="Results navigation">
+        <a class="blue-btn" href="{{ route('home') }}">Home</a>
+        <a class="blue-btn" href="{{ route('profile') }}">Profile</a>
+    </nav>
 
-<a class="top-left-corner blue-btn" href="{{ route('profile') }}"> {{auth()->user()->username}} </a>
+    <header class="results-summary">
+        <h1 class="title">Results</h1>
+        <p>Correct answers out of total questions</p>
+        <p class="results-score">{{ $results['overall']['correct'] }} / {{ $results['overall']['total'] }}</p>
+    </header>
 
-<a class="top-right-corner blue-btn" href="{{ route('home') }}">
-    < Home</a>
-
-        <div class="center text-center content">
-            <div>
-                <p class="title">Your score was</p>
-                <p class="title" style="font-size:70px; font-style:bold;">
-                   {{ $results['overall']['correct'] }} / {{ $results['overall']['total'] }}
-                </p>
-            </div>
-
-            <div class="results-wrapper">
-                <div class="result">
-                    <p>Art</p>
-                    <p class="title">{{ $results['art']['correct'] }} / {{ $results['art']['total'] }}</p>
-                </div>
-                <div class="result">
-                    <p>Geography</p>
-                    <p class="title">{{ $results['geography']['correct'] }} / {{ $results['geography']['total'] }}</p>
-                </div>
-                <div class="result">
-                    <p>History</p>
-                    <p class="title">{{ $results['history']['correct'] }} / {{ $results['history']['total'] }}</p>
-                </div>
-                <div class="result">
-                    <p>Science</p>
-                    <p class="title">{{ $results['science']['correct'] }} / {{ $results['science']['total'] }}</p>
-                </div>
-                <div class="result">
-                    <p>Sports</p>
-                    <p class="title">{{ $results['sports']['correct'] }} / {{ $results['sports']['total'] }}</p>
-                </div>
-
-            </div>
-        </div>
-
-        @endsection
+    <section class="results-wrapper" aria-label="Results by category">
+        @foreach (['Art' => 'art', 'Geography' => 'geography', 'History' => 'history', 'Science' => 'science', 'Sports' => 'sports'] as $label => $category)
+            <section class="result">
+                <h2>{{ $label }}</h2>
+                <p class="result-score">{{ $results[$category]['correct'] }} / {{ $results[$category]['total'] }}</p>
+            </section>
+        @endforeach
+    </section>
+</main>
+@endsection

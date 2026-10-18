@@ -31,7 +31,7 @@ class QuestionController extends Controller
         abort_unless((int) $quiz->user_id === (int) $request->user()->id, 403);
 
         if ((int) $quiz->completed === 1) {
-            return redirect()->route('quiz')->withErrors(['quiz' => 'This quiz has already been submitted.']);
+            return redirect()->route('quiz.results', $quiz);
         }
 
         //every question of this quiz needs one answer, and the answer must belong to that question
@@ -129,7 +129,7 @@ class QuestionController extends Controller
         });
 
         if (!$accepted) {
-            return redirect()->route('quiz')->withErrors(['quiz' => 'This quiz has already been submitted.']);
+            return redirect()->route('quiz.results', $quiz);
         }
 
         return redirect()->route('quiz.results', $quiz);

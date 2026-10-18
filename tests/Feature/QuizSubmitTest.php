@@ -227,15 +227,16 @@ class QuizSubmitTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
-    public function test_a_quiz_that_is_already_submitted_is_refused()
+    public function test_a_quiz_that_is_already_submitted_redirects_to_its_results()
     {
         $user = User::factory()->create();
         $quiz = $this->openQuiz($user);
         Quiz::where('id', $quiz->id)->update(['completed' => 1]);
 
-        $this->submit($user, $quiz, $this->fullAnswers($quiz))->assertRedirect(route('quiz'));
+        $this->submit($user, $quiz, $this->fullAnswers($quiz))
+            ->assertRedirect(route('quiz.results', $quiz))
+            ->assertSessionHasNoErrors();
 
-        $this->assertSame('This quiz has already been submitted.', session('errors')->first('quiz'));
         $this->assertSame(0, (int) $user->fresh()->xp);
     }
 
@@ -409,10 +410,8 @@ class QuizSubmitTest extends TestCase
         }
 
         $this->submit($user, $quiz, $answers)
-            ->assertRedirect(route('quiz'))
-            ->assertSessionHasErrors([
-                'quiz' => 'This quiz has already been submitted.',
-            ]);
+            ->assertRedirect(route('quiz.results', $quiz))
+            ->assertSessionHasNoErrors();
 
         $this->assertSame(1, (int) $quiz->fresh()->completed);
         $this->assertSame($xpAfterFirstSubmit, (int) $user->fresh()->xp);
