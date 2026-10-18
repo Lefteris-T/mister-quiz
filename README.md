@@ -268,7 +268,7 @@ The address `/quiz/{quiz}` exists, but only for `POST` (the Submit button of the
 
 | Request | Status | Why |
 |---|---|---|
-| `GET /nonexistent`, `/profile/1`, `/leaderboard/1`, `/quiz/1/results` | `404` | no route has this address |
+| `GET /nonexistent`, `/profile/1`, `/leaderboard/1`, `/quiz/1/answers` | `404` | no route has this address |
 | `GET /quiz/c`, `GET /quiz/1` | `405`, `Allow: POST` | `/quiz/{quiz}` exists, for `POST` only |
 | `PUT` or `DELETE /quiz/1` | `405` | the address exists, the method is not allowed |
 | `POST /`, `/quiz`, `/profile`, `/leaderboard` | `405` | these pages only read (`GET`) |

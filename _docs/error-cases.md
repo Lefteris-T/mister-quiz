@@ -38,7 +38,7 @@ This document outlines the expected error handling behavior and validation rules
 | E19 | Unknown quiz id on the submit address | `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/999999` (logged in) | `404 Not Found`, nothing scored |
 | E20 | Method that the submit address never accepts | `PUT /quiz/1`, `DELETE /quiz/1` | `405 Method Not Allowed` (`Allow: POST`) |
 | E21 | Write method on a page that only reads | `POST /`, `/quiz`, `/profile`, `/leaderboard` | `405 Method Not Allowed` (`Allow: GET, HEAD`) |
-| E22 | Address with an extra part or other letter case | `GET /profile/2`, `/leaderboard/1`, `/quiz/1/results`, `/Quiz` | `404 Not Found` |
+| E22 | Address with an extra part or other letter case | `GET /profile/2`, `/leaderboard/1`, `/quiz/1/answers`, `/Quiz` | `404 Not Found` |
 
 ---
 
@@ -399,7 +399,7 @@ HTTP/1.1 404 Not Found
 **Validation Rules:**
 - **Status Code:** exactly `404 Not Found` for every undefined path.
 - **No file access:** only files inside `public/` are served; path traversal never returns files from outside it.
-- **More addresses:** an address with an extra part (`/profile/2`, `/quiz/1/results`) is [E22](#error-case-e22-address-with-an-extra-part-or-other-letter-case). Why some wrong addresses give `405` and not `404`: see [E18](#error-case-e18-wrong-method-on-the-quiz-submit-address).
+- **More addresses:** an address with an extra part (`/profile/2`, `/quiz/1/answers`) is [E22](#error-case-e22-address-with-an-extra-part-or-other-letter-case). Why some wrong addresses give `405` and not `404`: see [E18](#error-case-e18-wrong-method-on-the-quiz-submit-address).
 
 ---
 
@@ -591,7 +591,7 @@ Allow: GET, HEAD
 
 ### Error Case E22: Address with an Extra Part or Other Letter Case
 **Description:**  
-A path that looks like a real page but that no route defines: an id after a page that has no id (`/profile/2`, `/leaderboard/1`), a sub-page that does not exist (`/quiz/1/results`), or the wrong letter case (`/Quiz`). Addresses are case sensitive. Because no route has this address, the first question of Laravel already fails, so the answer is `404` and not `405` (see [E18](#error-case-e18-wrong-method-on-the-quiz-submit-address)).
+A path that looks like a real page but that no route defines: an id after a page that has no id (`/profile/2`, `/leaderboard/1`), a sub-page that does not exist (`/quiz/1/answers`), or the wrong letter case (`/Quiz`). Addresses are case sensitive. Because no route has this address, the first question of Laravel already fails, so the answer is `404` and not `405` (see [E18](#error-case-e18-wrong-method-on-the-quiz-submit-address)).
 
 ---
 
@@ -599,7 +599,7 @@ A path that looks like a real page but that no route defines: an id after a page
 ```bash
 curl -i http://localhost:8000/profile/2
 curl -i http://localhost:8000/leaderboard/1
-curl -i http://localhost:8000/quiz/1/results
+curl -i http://localhost:8000/quiz/1/answers
 curl -i http://localhost:8000/Quiz
 ```
 
