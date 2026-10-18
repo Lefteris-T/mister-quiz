@@ -66,4 +66,26 @@ class User extends Authenticatable
 
         return 'Quiz Aprentice';
     }
+
+    /**
+     * The score of one category column (art, geography, history, science or
+     * sports), which is stored as the text "right/answered". The percentage
+     * is a whole number, and it is 0 when nothing was answered. See issue #33.
+     */
+    public function categoryScore(string $category): array
+    {
+        $right = 0;
+        $answered = 0;
+
+        if (preg_match('/^(\d+)\/(\d+)$/', (string) $this->getAttribute($category), $parts)) {
+            $right = (int) $parts[1];
+            $answered = (int) $parts[2];
+        }
+
+        return [
+            'right' => $right,
+            'answered' => $answered,
+            'percentage' => $answered > 0 ? (int) round($right / $answered * 100) : 0,
+        ];
+    }
 }

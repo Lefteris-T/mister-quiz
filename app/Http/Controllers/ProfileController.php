@@ -13,11 +13,11 @@ class ProfileController extends Controller
         $user = Auth()->user();
 
         //variables that will be used to display user score in each category
-        $art = [];
-        $geography = [];
-        $history = [];
-        $science = [];
-        $sports = [];
+        $art = $user->categoryScore('art');
+        $geography = $user->categoryScore('geography');
+        $history = $user->categoryScore('history');
+        $science = $user->categoryScore('science');
+        $sports = $user->categoryScore('sports');
 
         return view('profile', ['art' => $art, 'geography' => $geography, 'history' => $history, 'science' => $science, 'sports' => $sports]);
     }
