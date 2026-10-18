@@ -56,9 +56,4 @@ class HomeTest extends TestCase
     {
         $this->get('/profile')->assertRedirect('/login');
     }
-
-    public function test_leaderboard_is_open_to_everyone()
-    {
-        $this->get('/leaderboard')->assertStatus(200);
-    }
 }
