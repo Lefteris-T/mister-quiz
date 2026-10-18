@@ -88,4 +88,33 @@ class User extends Authenticatable
             'percentage' => $answered > 0 ? (int) round($right / $answered * 100) : 0,
         ];
     }
+
+    /**
+     * The total right answers: the sum of the right answers (the x of "x/y")
+     * of the five categories. No extra column, as decided in issue #3.
+     */
+    public function totalRight(): int
+    {
+        $total = 0;
+
+        foreach (['art', 'geography', 'history', 'science', 'sports'] as $category) {
+            $total += $this->categoryScore($category)['right'];
+        }
+
+        return $total;
+    }
+
+    /**
+     * The best players for the leaderboard: XP from high to low, then username
+     * from A to Z, then id. The id decides when two players have the same name
+     * and the same XP, so the order never changes between reloads (issue #35).
+     */
+    public static function topPlayers(int $limit = 10)
+    {
+        return static::orderByDesc('xp')
+            ->orderBy('username')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+    }
 }
