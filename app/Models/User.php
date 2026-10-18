@@ -45,4 +45,25 @@ class User extends Authenticatable
     {
         return $this->hasMany(Quiz::class);
     }
+
+    /**
+     * The rank for the XP of the user. Where the subject ranges overlap
+     * (5000 and 10000), the higher rank wins. See issue #32.
+     */
+    public function rank(): string
+    {
+        if ($this->xp >= 10000) {
+            return 'Quiz Master';
+        }
+
+        if ($this->xp >= 5000) {
+            return 'Epic Quizer';
+        }
+
+        if ($this->xp >= 1500) {
+            return 'Average Quizer';
+        }
+
+        return 'Quiz Aprentice';
+    }
 }
