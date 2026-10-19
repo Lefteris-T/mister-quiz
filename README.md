@@ -188,6 +188,32 @@ php artisan db:seed
 
 The first start takes a few minutes. Check the progress with `docker compose logs -f app`.
 
+### Zone01 lab PCs (Podman)
+
+On the Zone01 lab PCs `docker` is really Podman. `docker compose` needs the Podman API socket, which is off by default. Without it the build fails with:
+
+```text
+ERRO[0000] Can't add file .../.dockerignore to tar: io: read/write on closed pipe
+failed to connect to the docker API at unix:///run/user/<uid>/podman/podman.sock ... no such file or directory
+```
+
+Step by step:
+
+1. **Enable the Podman socket** (once per account; it then starts at every login):
+   `systemctl --user enable --now podman.socket`
+2. **Check it:** `ls /run/user/$(id -u)/podman/podman.sock` shows the file.
+3. **Clone and switch branch:**
+   `git clone https://platform.zone01.gr/git/hmim/mister-quiz.git && cd mister-quiz && git switch dev`
+4. **Create `.env`:** `cp .env.example .env`
+5. **Build the image:** `docker compose build app`
+6. **Add the php and composer wrappers:**
+   `mkdir -p ~/.local/bin && ln -s "$PWD/docker/bin/php" ~/.local/bin/php && ln -s "$PWD/docker/bin/composer" ~/.local/bin/composer`
+   then open a new terminal.
+7. **Install and prepare:** `composer install` then `php artisan key:generate`
+8. **Start:** `docker compose up -d`
+9. **Load the questions:** `php artisan db:seed`
+10. **Open** http://localhost:8000
+
 ## Usage
 
 | Service | URL | Notes |
