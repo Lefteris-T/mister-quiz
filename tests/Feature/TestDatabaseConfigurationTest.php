@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class TestDatabaseConfigurationTest extends TestCase
@@ -13,5 +14,7 @@ class TestDatabaseConfigurationTest extends TestCase
             ':memory:',
             config('database.connections.sqlite.database')
         );
+        $this->assertSame('sqlite', DB::connection()->getDriverName());
+        $this->assertSame(':memory:', DB::connection()->getDatabaseName());
     }
 }
