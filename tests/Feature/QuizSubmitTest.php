@@ -227,6 +227,26 @@ class QuizSubmitTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
+    public function test_open_quiz_results_redirect_to_quiz_with_an_error()
+    {
+        $user = User::factory()->create();
+        $quiz = $this->openQuiz($user);
+
+        $this->actingAs($user)->get(route('quiz.results', $quiz))
+            ->assertRedirect(route('quiz'))
+            ->assertSessionHasErrors([
+                'quiz' => 'This quiz has not been submitted.',
+            ]);
+    }
+
+    public function test_guest_opening_quiz_results_goes_to_login()
+    {
+        $quiz = $this->openQuiz(User::factory()->create());
+
+        $this->get(route('quiz.results', $quiz))
+            ->assertRedirect(route('login'));
+    }
+
     public function test_a_quiz_that_is_already_submitted_redirects_to_its_results()
     {
         $user = User::factory()->create();
@@ -434,6 +454,8 @@ class QuizSubmitTest extends TestCase
         $path = '/quiz/' . $quiz->id . '/results';
 
         $firstVisit = $this->actingAs($user)->get($path)->assertOk();
+        $firstVisit->assertSee('href="' . route('home') . '"', false);
+        $firstVisit->assertSee('href="' . route('profile') . '"', false);
         $firstVisit->assertSee('10 / 20');
         $this->assertSame(5, substr_count($firstVisit->getContent(), '2 / 4'));
 
