@@ -35,7 +35,7 @@ This document outlines the expected error handling behavior and validation rules
 | E16 | Form without CSRF token | `POST /login` without `_token` | `419 Page Expired` |
 | E17 | Internal server error | Database stopped, `GET /leaderboard` | `500 Server Error`, no stack trace when `APP_DEBUG=false` |
 | E18 | Wrong method on the quiz submit address | `GET /quiz/c`, `GET /quiz/1` | `405 Method Not Allowed` (`Allow: POST`) |
-| E19 | Unknown quiz id on the submit address | `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/999999` (logged in) | `404 Not Found`, nothing scored |
+| E19 | Unknown quiz id on the submit address | `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/1abc`, `/quiz/999999` (logged in) | `404 Not Found`, nothing scored |
 | E20 | Method that the submit address never accepts | `PUT /quiz/1`, `DELETE /quiz/1` | `405 Method Not Allowed` (`Allow: POST`) |
 | E21 | Write method on a page that only reads | `POST /`, `/quiz`, `/profile`, `/leaderboard` | `405 Method Not Allowed` (`Allow: GET, HEAD`) |
 | E22 | Address with an extra part or other letter case | `GET /profile/2`, `/leaderboard/1`, `/quiz/1/answers`, `/Quiz` | `404 Not Found` |
@@ -511,14 +511,14 @@ Allow: POST
 
 ### Error Case E19: Unknown Quiz Id on the Submit Address
 **Description:**  
-A logged-in user posts the quiz form to an id that is not a quiz: text, zero, a negative or decimal number, or a number that no quiz has. The address matches `/quiz/{quiz}` and the method is right, but the quiz cannot be loaded. The same as [E13](#error-case-e13-tampered-quiz-submit) case b), with more kinds of ids.
+A logged-in user posts the quiz form to an id that is not a quiz: text, text after a number (`1abc`), zero, a negative or decimal number, or a number that no quiz has. The address matches `/quiz/{quiz}` and the method is right, but the quiz cannot be loaded. The same as [E13](#error-case-e13-tampered-quiz-submit) case b), with more kinds of ids.
 
 ---
 
 **Request (Browser):**
 ```plaintext
 Log in, open /quiz, change the action of the form in DevTools to /quiz/c, click Submit
-(then the same with /quiz/0, /quiz/-1, /quiz/1.5 and /quiz/999999)
+(then the same with /quiz/0, /quiz/-1, /quiz/1.5, /quiz/1abc and /quiz/999999)
 ```
 
 **Expected Output / Behavior:**
@@ -529,9 +529,10 @@ HTTP/1.1 404 Not Found
 **Validation Rules:**
 - **Status Code:** exactly `404` for every id above. Never `500` (no database error from a text id).
 - **Nothing scored:** XP, category scores and `completed` of every quiz stay unchanged.
+- **Digits only:** an id with anything else than digits (`1abc`, `1.0`, `+1`, `1e0`, spaces) is `404` on every database. MySQL alone would read `1abc` as `1` and open quiz 1 (issue #60); the `Quiz` model refuses such an id before it asks the database. `01` is made of digits and still opens quiz 1.
 - **Another user's quiz:** an id that exists but belongs to someone else is `403`, see E13.
 - **Page:** the `404` page.
-- **Test:** issue #50.
+- **Test:** issues #50 and #60.
 
 ---
 

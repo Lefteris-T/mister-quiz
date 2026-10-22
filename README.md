@@ -286,6 +286,9 @@ All cases are listed in [`_docs/error-cases.md`](_docs/error-cases.md).
 
 ### 404 or 405? Why `/quiz/c` is not a 404
 
+> **In short:** `405` means the address exists, but not for this method (`GET /quiz/c`: `/quiz/<any text>` exists for `POST` only; `POST /profile`: `/profile` exists for `GET` only).
+> `404` means the app has no such address at all (`/nonexistent`, `/profile/1`, `/quiz/c/23`, `/quiz/1/answers`).
+
 Laravel asks two questions, in this order:
 
 1. **Is there a route with this address?** If not: `404 Not Found`.
@@ -299,7 +302,7 @@ The address `/quiz/{quiz}` exists, but only for `POST` (the Submit button of the
 | `GET /quiz/c`, `GET /quiz/1` | `405`, `Allow: POST` | `/quiz/{quiz}` exists, for `POST` only |
 | `PUT` or `DELETE /quiz/1` | `405` | the address exists, the method is not allowed |
 | `POST /`, `/quiz`, `/profile`, `/leaderboard` | `405` | these pages only read (`GET`) |
-| `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/999999` (logged in) | `404` | the route matches, but no quiz has this id |
+| `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/1abc`, `/quiz/999999` (logged in) | `404` | the route matches, but no quiz has this id (an id is made of digits only, so `1abc` is not quiz 1) |
 | `POST /quiz/{quiz of another user}` | `403` | the quiz exists, but it is not yours |
 
 We keep `405` on purpose: it is the correct HTTP answer, and it tells the client which method works. The `405` page looks like the `404` page.

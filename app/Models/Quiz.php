@@ -25,6 +25,19 @@ class Quiz extends Model
     }
 
     /**
+     * Only an id made of digits can name a quiz. MySQL reads "1abc" as 1,
+     * so without this check /quiz/1abc would open quiz 1.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (! ctype_digit((string) $value)) {
+            return null;
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
+
+    /**
      * The open quiz of the user, or a new one when there is none.
      * Returns null when no quiz can be made (a category has no questions).
      */

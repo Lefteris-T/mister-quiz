@@ -43,6 +43,7 @@ class WrongRoutesTest extends TestCase
     {
         return [
             'GET /quiz/c' => ['GET', '/quiz/c'],
+            'GET /quiz/1abc' => ['GET', '/quiz/1abc'],
             'GET /quiz/1' => ['GET', '/quiz/1'],
             'PUT /quiz/1' => ['PUT', '/quiz/1'],
             'DELETE /quiz/1' => ['DELETE', '/quiz/1'],
@@ -74,7 +75,73 @@ class WrongRoutesTest extends TestCase
             '/quiz/0' => ['/quiz/0'],
             '/quiz/-1' => ['/quiz/-1'],
             '/quiz/1.5' => ['/quiz/1.5'],
+            '/quiz/1abc' => ['/quiz/1abc'],
             '/quiz/999999' => ['/quiz/999999'],
+        ];
+    }
+
+    /**
+     * @dataProvider idsWithText
+     */
+    public function test_an_id_with_text_never_reaches_the_database($id)
+    {
+        // MySQL reads "1abc" as 1 and SQLite does not, so check that no query is made at all.
+        DB::enableQueryLog();
+
+        $this->assertNull((new Quiz())->resolveRouteBinding($id));
+        $this->assertSame([], DB::getQueryLog());
+    }
+
+    /**
+     * @dataProvider idsWithText
+     */
+    public function test_an_id_with_text_does_not_open_the_quiz($id)
+    {
+        $user = User::factory()->create();
+        $quiz = Quiz::create(['user_id' => $user->id, 'completed' => 1]);
+
+        $this->assertSame(1, (int) $quiz->id);
+
+        $this->actingAs($user);
+
+        $this->get('/quiz/' . rawurlencode($id) . '/results')->assertStatus(404);
+        $this->post('/quiz/' . rawurlencode($id))->assertStatus(404);
+    }
+
+    /**
+     * @dataProvider idsWithDigitsOnly
+     */
+    public function test_an_id_made_of_digits_still_finds_the_quiz($id)
+    {
+        $user = User::factory()->create();
+        $quiz = Quiz::create(['user_id' => $user->id, 'completed' => 1]);
+
+        $this->assertSame(1, (int) $quiz->id);
+
+        $this->actingAs($user)->get('/quiz/' . $id . '/results')->assertOk();
+    }
+
+    public function idsWithText(): array
+    {
+        return [
+            '1abc' => ['1abc'],
+            '1.0' => ['1.0'],
+            '+1' => ['+1'],
+            '1e0' => ['1e0'],
+            'space before 1' => [' 1'],
+            'space after 1' => ['1 '],
+            '0x1' => ['0x1'],
+            'c' => ['c'],
+            '-1' => ['-1'],
+            '1.5' => ['1.5'],
+        ];
+    }
+
+    public function idsWithDigitsOnly(): array
+    {
+        return [
+            '1' => ['1'],
+            '01' => ['01'],
         ];
     }
 

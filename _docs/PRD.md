@@ -167,7 +167,7 @@ The program follows a **validate-first, fail-safe** strategy.
 - [ ] **Error Case E12**: ***Guest opens a protected page*** | **Input Argument**: `GET /quiz`, `GET /profile` | **Expected Behavior/Output**: `302` → `/login`
 - [ ] **Error Case E13**: ***Tampered quiz submit*** | **Input Argument**: another user's quiz / unknown quiz / foreign answer id | **Expected Behavior/Output**: `403` / `404` / `302` + error; nothing scored
 - [ ] **Error Case E18**: ***Wrong method on the quiz submit address*** | **Input Argument**: `GET /quiz/c`, `GET /quiz/1` | **Expected Behavior/Output**: `405` + `Allow: POST` (the address exists for `POST` only), the `405` page looks like the `404` page
-- [ ] **Error Case E19**: ***Unknown quiz id on the submit address*** | **Input Argument**: `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/999999` (logged in) | **Expected Behavior/Output**: `404`; nothing scored
+- [ ] **Error Case E19**: ***Unknown quiz id on the submit address*** | **Input Argument**: `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/1abc`, `/quiz/999999` (logged in) | **Expected Behavior/Output**: `404`; nothing scored
 - [ ] **Error Case E20**: ***Method that the submit address never accepts*** | **Input Argument**: `PUT /quiz/1`, `DELETE /quiz/1` | **Expected Behavior/Output**: `405` + `Allow: POST`
 - [ ] **Error Case E21**: ***Write method on a page that only reads*** | **Input Argument**: `POST /`, `/quiz`, `/profile`, `/leaderboard` | **Expected Behavior/Output**: `405` + `Allow: GET, HEAD`
 - [ ] **Error Case E22**: ***Address with an extra part or other letter case*** | **Input Argument**: `GET /profile/2`, `/leaderboard/1`, `/quiz/1/answers`, `/Quiz` | **Expected Behavior/Output**: `404`
