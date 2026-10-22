@@ -454,8 +454,6 @@ class QuizSubmitTest extends TestCase
         $path = '/quiz/' . $quiz->id . '/results';
 
         $firstVisit = $this->actingAs($user)->get($path)->assertOk();
-        $firstVisit->assertSee('href="' . route('home') . '"', false);
-        $firstVisit->assertSee('href="' . route('profile') . '"', false);
         $firstVisit->assertSee('10 / 20');
         $this->assertSame(5, substr_count($firstVisit->getContent(), '2 / 4'));
 
@@ -463,6 +461,20 @@ class QuizSubmitTest extends TestCase
         $refresh = $this->actingAs($user)->get($path)->assertOk();
         $refresh->assertSee('10 / 20');
         $this->assertSame(5, substr_count($refresh->getContent(), '2 / 4'));
+    }
+
+    public function test_the_results_page_links_to_home_and_profile()
+    {
+        $user = User::factory()->create();
+        $quiz = $this->openQuiz($user);
+
+        $this->submit($user, $quiz, $this->fullAnswers($quiz))
+            ->assertRedirect('/quiz/' . $quiz->id . '/results');
+
+        $this->actingAs($user)->get('/quiz/' . $quiz->id . '/results')
+            ->assertOk()
+            ->assertSee('href="' . route('home') . '"', false)
+            ->assertSee('href="' . route('profile') . '"', false);
     }
 
     public function test_results_use_the_actual_number_of_questions_in_each_category()
