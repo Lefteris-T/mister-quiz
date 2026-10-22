@@ -183,7 +183,7 @@ cd mister-quiz
 docker compose up -d --build
 
 # load the 01-edu questions (safe to rerun)
-php artisan db:seed
+docker compose exec app php artisan db:seed
 ```
 
 The first start takes a few minutes. Check the progress with `docker compose logs -f app`.
@@ -268,6 +268,7 @@ The project uses Laravel's **MVC** pattern. Scoring rules live in a small servic
 | POST | `/logout` | logged in | Sign out |
 | GET | `/quiz` | logged in (guests → `/login`) | Start or resume the quiz |
 | POST | `/quiz/{quiz}` | owner of the quiz | Submit answers → results |
+| GET | `/quiz/{quiz}/results` | owner of the quiz (guests → `/login`, another user → `403`) | Results of a submitted quiz (name `quiz.results`); a quiz that is not submitted goes back to `/quiz` |
 | GET | `/profile` | logged in (guests → `/login`) | Own profile |
 | GET | `/leaderboard` | everyone | Top 10 players |
 
@@ -298,7 +299,7 @@ The address `/quiz/{quiz}` exists, but only for `POST` (the Submit button of the
 | `GET /quiz/c`, `GET /quiz/1` | `405`, `Allow: POST` | `/quiz/{quiz}` exists, for `POST` only |
 | `PUT` or `DELETE /quiz/1` | `405` | the address exists, the method is not allowed |
 | `POST /`, `/quiz`, `/profile`, `/leaderboard` | `405` | these pages only read (`GET`) |
-| `POST /quiz/c`, `/quiz/0`, `/quiz/999999` (logged in) | `404` | the route matches, but no quiz has this id |
+| `POST /quiz/c`, `/quiz/0`, `/quiz/-1`, `/quiz/1.5`, `/quiz/999999` (logged in) | `404` | the route matches, but no quiz has this id |
 | `POST /quiz/{quiz of another user}` | `403` | the quiz exists, but it is not yours |
 
 We keep `405` on purpose: it is the correct HTTP answer, and it tells the client which method works. The `405` page looks like the `404` page.
@@ -307,11 +308,11 @@ We keep `405` on purpose: it is the correct HTTP answer, and it tells the client
 
 - **Feature tests** (`tests/Feature/`): register, login, homepage buttons, quiz start, submit rules, results, profile, leaderboard.
 - **Unit tests** (`tests/Unit/`): rank limits, `x/y` updates, percentage with `0/0`.
-- **Test database**: tests must not touch `mister_quiz`. Issue #14 enables the in-memory SQLite lines in `phpunit.xml`.
+- **Test database**: `phpunit.xml` sets SQLite in memory (issue #14), so `php artisan test` never touches `mister_quiz`, also when the database container is stopped.
 - **Manual audit**: the [audit cases](_docs/audit-cases.md) follow the official checklist line by line.
 
 ```bash
-php artisan test
+docker compose exec app php artisan test
 ```
 
 > ℹ️ Today the starter test for `/` fails (`Route [leaderboard] not defined`). This is expected until Milestone 2.

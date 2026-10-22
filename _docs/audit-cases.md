@@ -2,7 +2,7 @@
 
 This document outlines the standard audit cases to verify the core functional requirements and execution behavior of the `mister-quiz` project. Every web case quotes the matching question of the [official audit checklist](mister-quiz_audit.md). A milestone is done when its cases pass.
 
-**Setup for every web case:** the stack runs (`docker compose up -d`), the 01-edu questions are imported, and the browser starts logged out at `http://localhost:8000`.
+**Setup for every web case:** the stack runs (`docker compose up -d`), the 01-edu questions are loaded (`docker compose exec app php artisan db:seed`), and the browser starts logged out at `http://localhost:8000`.
 
 ---
 
@@ -12,8 +12,8 @@ This document outlines the standard audit cases to verify the core functional re
 | Case ID | Description | Input Argument(s) | Expected Behavior / Output |
 |:---:|---|---|---|
 | C01 | Fresh clone starts with one command | `docker compose up -d --build` | 3 services up, `db` healthy, 7 migrations ran |
-| C02 | Question data import | `docker compose exec -T db mysql … < questions_and_answers.sql` | 5 categories × 12 questions |
-| C03 | Test suite | `php artisan test` | All tests pass (from M8) |
+| C02 | Question data import | `docker compose exec app php artisan db:seed` | 5 categories × 12 questions |
+| C03 | Test suite | `docker compose exec app php artisan test` | All tests pass (from M8) |
 
 #### Part 2: Web & HTTP Audit Cases
 | Case ID | Milestone | Description | Request Pattern / Trigger | Expected HTTP Status / Output |
@@ -76,7 +76,7 @@ mister-quiz-phpmyadmin-1    phpmyadmin   Up
 
 ### Audit Case C02: Question Data Import
 **Description:**  
-Tests that the 01-edu question file loads into the `question` and `answer` tables. The quiz cases need this data.
+Tests that the seeder loads the 01-edu questions (saved in `database/data/questions.json`) into the `question` and `answer` tables. The quiz cases need this data.
 
 ---
 
@@ -84,9 +84,8 @@ Tests that the 01-edu question file loads into the `question` and `answer` table
 
 **Input Argument:**
 ```bash
-curl -fsSL -o /tmp/questions_and_answers.sql https://assets.01-edu.org/mister-quiz/questions_and_answers.sql
-docker compose exec -T db mysql -umister_quiz -psecret mister_quiz < /tmp/questions_and_answers.sql
-docker compose exec -T db mysql -umister_quiz -psecret -e "select category, count(*) from question group by category" mister_quiz
+docker compose exec app php artisan db:seed
+docker compose exec -T db mysql -umister_quiz -psecret -e "select category, count(*) from question group by category order by category" mister_quiz
 ```
 
 **Expected Output:**
@@ -102,7 +101,7 @@ Sports      12
 **Validation Rules:**
 - **Categories:** exactly the 5 subject categories.
 - **Answers:** `select count(*) from answer` returns `240` (4 answers per question), with exactly 1 correct answer per question.
-- **Run once:** a second import duplicates the rows (see [Error Case E04](error-cases.md#error-case-e04-question-data-imported-twice)). After M0 issue #4 a seeder may replace this step.
+- **Run twice:** the seeder uses `updateOrInsert`, so a second `db:seed` changes nothing: still 60 questions and 240 answers, with exactly 1 correct answer per question (checked on a fresh clone). The old SQL import duplicated the rows (see [Error Case E04](error-cases.md#error-case-e04-question-data-imported-twice)).
 
 ---
 
@@ -112,11 +111,11 @@ Tests that the automated tests pass and use a separate test database, not `miste
 
 ---
 
-**Execution Environment:** Linux terminal, stack running, wrappers installed (or `docker compose exec app`).
+**Execution Environment:** Linux terminal, stack from C01 running.
 
 **Input Argument:**
 ```bash
-php artisan test
+docker compose exec app php artisan test
 ```
 
 **Expected Output:**

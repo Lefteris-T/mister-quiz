@@ -53,7 +53,8 @@ The website lets a player register, log in, answer a quiz of questions from five
 | POST | `/login` | — | guests | `email`, `password`, `_token` | `302` → `/` and signed in · `302` → `/login` with error |
 | POST | `/logout` | `logout` | logged in | `_token` | `302` → `/`, session ended |
 | GET | `/quiz` | `quiz` | logged in | — | `200 OK`, the open quiz (created if none) · guests `302` → `/login` |
-| POST | `/quiz/{quiz}` | `quiz.submit` | owner of the quiz | `answers[<question_id>] = <answer_id>`, `_token` | `200 OK` results page (or `302` → results) · `302` → `/quiz` with error |
+| POST | `/quiz/{quiz}` | `quiz.submit` | owner of the quiz | `answers[<question_id>] = <answer_id>`, `_token` | `302` → `/quiz/{quiz}/results` (also for a quiz that was submitted before) · `302` → `/quiz` with error |
+| GET | `/quiz/{quiz}/results` | `quiz.results` | owner of the quiz | — | `200 OK`, results page · quiz not submitted `302` → `/quiz` with error · another user `403` · guests `302` → `/login` |
 | GET | `/profile` | `profile` | logged in | — | `200 OK`, own profile · guests `302` → `/login` |
 | GET | `/leaderboard` | `leaderboard` | everyone | — | `200 OK`, top 10 table |
 
