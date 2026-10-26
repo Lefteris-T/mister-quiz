@@ -77,6 +77,15 @@ podman compose build app
 ```
 podman compose run --rm app composer install
 ```
+- If it stops with `HTTP/2 429` and `git was not found in your PATH`, GitHub has rate-limited the lab network (the lab PCs share one public IP). Wait a few minutes and run the command again.
+- To avoid the error for good, add `git` to the image. When a zip download is refused, Composer falls back to cloning the package with `git`, which the image does not include:
+  1. In `Dockerfile`, change:    
+  `apt-get install -y --no-install-recommends unzip libzip-dev`     
+  to   
+   `apt-get install -y --no-install-recommends git unzip libzip-dev`.
+  2. Rebuild the image: `podman compose build app`
+  3. Run step 5 again.
+
 6. **Generate the application key — first installation only:**
 ```
 podman compose run --rm app php artisan key:generate
