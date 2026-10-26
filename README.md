@@ -188,31 +188,59 @@ docker compose exec app php artisan db:seed
 
 The first start takes a few minutes. Check the progress with `docker compose logs -f app`.
 
-### Zone01 lab PCs (Podman)
+### Zone01 lab PCs — Podman setup without wrappers
 
-On the Zone01 lab PCs `docker` is really Podman. `docker compose` needs the Podman API socket, which is off by default. Without it the build fails with:
+Run these commands from a terminal. PHP and Composer run inside containers; they do not need to be installed on the host.
 
-```text
-ERRO[0000] Can't add file .../.dockerignore to tar: io: read/write on closed pipe
-failed to connect to the docker API at unix:///run/user/<uid>/podman/podman.sock ... no such file or directory
-```
+# 1. Enable the Podman socket
+systemctl --user enable --now podman.socket
 
-Step by step:
+# 2. Clone the repository and check out dev
+git clone --branch dev https://platform.zone01.gr/git/hmim/mister-quiz.git
+cd mister-quiz
 
-1. **Enable the Podman socket** (once per account; it then starts at every login):
-   `systemctl --user enable --now podman.socket`
-2. **Check it:** `ls /run/user/$(id -u)/podman/podman.sock` shows the file.
-3. **Clone and switch branch:**
-   `git clone https://platform.zone01.gr/git/hmim/mister-quiz.git && cd mister-quiz && git switch dev`
-4. **Create `.env`:** `cp .env.example .env`
-5. **Build the image:** `docker compose build app`
-6. **Add the php and composer wrappers:**
-   `mkdir -p ~/.local/bin && ln -s "$PWD/docker/bin/php" ~/.local/bin/php && ln -s "$PWD/docker/bin/composer" ~/.local/bin/composer`
-   then open a new terminal.
-7. **Install and prepare:** `composer install` then `php artisan key:generate`
-8. **Start:** `docker compose up -d`
-9. **Load the questions:** `php artisan db:seed`
-10. **Open** http://localhost:8000
+# 3. Create .env only if it does not already exist
+[ -f .env ] || cp .env.example .env
+
+# 4. Build the application image
+podman compose build app
+
+# 5. Install PHP dependencies
+podman compose run --rm app composer install
+
+# 6. Generate the application key — first installation only
+podman compose run --rm app php artisan key:generate
+
+# 7. Start the services
+podman compose up -d
+podman compose ps
+
+Wait until db is healthy and app is Up, then continue:
+# 8. Apply database migrations
+podman compose exec app php artisan migrate --force
+
+# 9. Load the questions and answers
+podman compose exec app php artisan db:seed --force
+
+# 10. Run the tests
+podman compose exec app php artisan test
+
+Open the application using the host port shown by podman compose ps, normally http://localhost:8000.
+
+The external Compose provider message is informational. Do not manually import the SQL file; use the seeder.
+
+
+## Optional: Create test players for the leaderboard
+After completing the setup above, with the containers running, create 12 test players with different XP amounts:
+
+
+podman compose exec app php artisan tinker --execute='foreach (range(1, 12) as $i) { App\Models\User::factory()->create(["xp" => $i * 500]); }'
+
+Run this command once: each execution creates 12 additional users. There is no need to run the question seeder again.
+
+Open Leaderboard in the browser. It should show the top 10 players ordered by XP, highest first.
+
+These players have 500–6000 XP. Their category scores remain 0/0, so this checks XP ordering and the top 10 limit, but does not verify different total correct-answer counts.
 
 ## Usage
 
